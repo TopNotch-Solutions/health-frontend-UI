@@ -1,0 +1,9 @@
+.myButton{
+    width: 200px;
+    font-family: "Montserrat", sans-serif;
+}
+@media screen and (max-width:575px) {
+    .myButton{
+        width: 120px;
+    }
+}

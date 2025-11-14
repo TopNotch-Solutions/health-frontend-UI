@@ -1,0 +1,19 @@
+.header-style {
+    background-color: #1976d2; /* Example color */
+    color: white; /* Text color */
+  }
+
+.status-pending {
+  color: rgb(234, 156, 0);
+}
+
+.status-rejected {
+  color: rgba(221, 44, 33, 1);
+}
+.text-bold{
+  font-weight: bold;
+}
+
+.status-approved {
+  color: rgba(0, 149, 71, 1);
+}

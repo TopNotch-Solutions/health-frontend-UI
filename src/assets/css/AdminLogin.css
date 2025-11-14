@@ -1,0 +1,241 @@
+.login-container {
+  min-height: 100vh;
+  background-color: #fdfafa;
+}
+
+.login-wrapper {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr;
+  min-height: 100vh;
+}
+
+.login-logo-section {
+  display: none;
+  background-color: #ffffff;
+  place-items: center;
+}
+
+.login-logo {
+  max-width: 80%;
+  height: auto;
+}
+
+.login-form-section {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.login-form-wrapper {
+  width: 100%;
+  max-width: 440px;
+}
+
+.login-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.login-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.auth-form h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.auth-subtitle {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.form-field {
+  margin-bottom: 1.5rem;
+}
+
+.form-field label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #374151;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: #009548;
+  box-shadow: 0 0 0 3px rgba(0, 149, 72, 0.1);
+}
+
+.error-input {
+  border-color: #dc2626 !important;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.password-input {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #374151;
+}
+
+.forgot-password {
+  color: #352495;
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: #0d409e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover {
+  background-color: #8199d6;
+}
+
+.submit-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.back-button {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: #154e8a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: #0f3d6b;
+}
+
+.loader {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid white;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (min-width: 1024px) {
+  .login-logo-section {
+    display: grid;
+  }
+}
+
+@media (max-width: 1023px) {
+  .login-wrapper {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-card {
+    padding: 1.5rem;
+  }
+  
+  .login-form-section {
+    padding: 1rem;
+  }
+}
+
+/* Add this new class for centered layout */
+.login-wrapper-centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* Update the login-form-section for centered layout */
+.login-wrapper-centered .login-form-section {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Adjust card width for centered layout */
+.login-wrapper-centered .login-card {
+  width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .login-wrapper-centered {
+    padding: 1rem;
+  }
+  
+  .login-wrapper-centered .login-form-section {
+    max-width: 100%;
+  }
+}

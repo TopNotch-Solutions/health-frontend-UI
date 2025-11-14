@@ -1,0 +1,139 @@
+.wapper-topbar{
+    margin-right: 10px;
+    margin-left: 10px;
+    padding-top: 10px;
+    text-align: center;
+}
+.wapper-topbar-line{
+
+    display: flex;
+    align-items: center;
+    margin-left: auto 10px auto 10px;
+    
+}
+.text-bold{
+    font-weight: bold;
+  }
+.username-text{
+    font-weight: bold;
+    font-size: 17px;
+}
+.role-text{
+    margin-top: -23px;
+    font-size: 13px;
+}
+
+
+@media (max-width: 576px) {
+    .mtop{
+        margin-right: 10px;
+    }
+}
+
+.topbar-container {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.topbar-logo {
+  height: 48px;
+  width: auto;
+  border-radius: 8px;
+}
+
+.notification-icon {
+  transition: transform 0.2s ease;
+}
+
+.notification-icon:hover {
+  transform: scale(1.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-right: 1px solid #eee;
+}
+
+.user-details {
+  text-align: right;
+  line-height: 1.2;
+}
+
+.user-name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.user-role {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.user-avatar {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
+}
+
+.user-dropdown .dropdown-toggle {
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none !important;
+}
+
+.user-dropdown .dropdown-toggle::after {
+  color: #666;
+}
+
+.dropdown-menu {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  min-width: 200px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #333;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+  color: #1976d2;
+}
+
+.dropdown-item svg {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 576px) {
+  .notification-icon {
+    margin-right: 8px;
+  }
+  
+  .user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar-container {
+    padding: 0.5rem 1rem;
+  }
+}

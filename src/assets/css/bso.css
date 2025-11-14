@@ -1,0 +1,322 @@
+.digit{
+    margin: auto 0 auto 10px;
+    font-size: 23px;
+    font-weight: 600;
+}
+.list-group{
+    font-size: 23px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px rgba(0, 0, 0, 0.25)
+}
+.bso{
+    width: fit-content;
+    font-weight: 700;
+}
+.text-bold{
+  font-weight: bold;
+  font-family: "Montserrat", sans-serif;
+}
+.msme-table{
+    overflow-x: auto;
+}
+/* reduce the padding on different screens */
+.listing-bso{ 
+    margin-top: 40px;
+}
+.custom-button{
+    border: none;
+    color: white;
+    background: rgba(0, 149, 71, 1);
+    border-radius: 5px;
+}
+.profile-container {
+    display: flex; /* Arrange cards horizontally */
+    width:auto;
+    
+  }
+  
+  .profileI{
+    width: 40%;
+    height: 60%;
+    border-radius: 90px;
+    /* position:relative; */
+  }
+  .circularr-image{
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+  }
+  .pic-div{
+    width: 230px;
+    height: 230px;
+  }
+  .camera-topp{
+    top: 25px;
+    right: 10px;
+    z-index: 1;
+    border: 1px solid #1674BB;
+  }
+
+  
+  .profile{
+    position: relative;
+    /* justify-content: center; */
+    width: 100%;
+    height: 100%;
+    padding-left: 50px;
+  }
+  
+  .profileI {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover; /* This ensures the image covers the entire circular area */
+  }
+  
+  .iconC {
+    z-index: 999;
+    position: absolute; /* Position the icon absolutely */
+    top: 25px; /* Adjust as needed to position the icon vertically */
+    right: 15px; /* Adjust as needed to position the icon horizontally */
+    background-color: #00AAE9; /* Optional: Add background color to make icon more visible */
+    border-radius: 50%; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 30px;
+    height: 30px; 
+  }
+  
+  .profile-card {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin: 10px;
+    width: 45%; /* Adjust width for better alignment */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+  }
+  
+  
+  
+  .profile-card img {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%; /* Circle for profile photo */
+    margin-bottom: 10px;
+  }
+  
+  .profileCardSmall{
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin: 10px;
+    width: 30%; /* Adjust width for better alignment */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+  }
+  
+  .profileCardLarge {
+    justify-content: center;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin: 10px;
+    width: 60%; /* Adjust width for better alignment */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+  }
+  
+  
+  .profile-entities {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px; /* Adjust the gap between columns */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .profile-entities label {
+    grid-column: span 2;
+  }
+  
+  .profile-entities input[type="text"],
+  .profile-entities input[type="email"],
+  .profile-entities input[type="tel"],
+  .profile-entities input[type="password"],
+  .profile-entities textarea,
+  .profile-entities select {
+    width: 100%;
+    padding: 5px;
+  }
+  
+  
+  
+  .profile-card h3,
+  .profile-card p {
+    margin-bottom: 5px;
+  }
+  
+  .profile-card label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  /* .container-flex{
+    display: flex;
+  } */
+  
+  .profile-card input[type="text"],
+  .profile-card input[type="email"],
+  .profile-card input[type="tel"],
+  .profile-card input[type="password"],
+  .profile-card textarea,
+  .profile-card select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-bottom: 15px;
+    box-sizing: border-box; /* Include padding in width */
+  }
+  
+  .button2 {
+    background: #009548; /* Gradient background */
+    color: white;
+    border: none;
+    cursor: pointer;
+    height: 35px; /* Increased height */
+    width: 190px;
+    border-radius: 5px;
+    padding: 10px;
+    margin-left: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .colum1{
+    justify-content:space-between;
+    display:table;
+    margin-top: 20px;
+    margin-right: 28%;
+  }
+  
+  .row{
+    display: flex;
+    /* padding:10px; */
+  }
+  
+  .table-container{
+    display:flex;
+    justify-content: center;
+    border: 1px solid #ddd;
+    width:91.3%;
+    height:70%;
+    border-radius: 5px;
+    margin: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .card-header{ 
+      background-color: #f0f0f0;
+      padding: 60px;
+      border-radius: 4px;
+      display: flex;
+      width:100%;
+      height: 15px;
+    }
+  
+  .card-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: bold;
+    align-items: left;
+  }
+  
+  .inputs{
+    margin-top: 5px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    height: 40%;
+    width: 200%; /* Adjust width for better alignment */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  /* New */
+  .bg-color{
+    background-color: #F1F1F1;
+  }
+  .text-col{
+    color: black;
+  }
+  .upload-btn{
+    background: #009548; /* Gradient background */
+    color: white;
+    border: none;
+    cursor: pointer;
+    height: 35px; /* Increased height */
+    width: 250px;
+    border-radius: 5px;
+    padding: 10px;
+    margin-left: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 20px;
+  }
+  .error-text{
+    color: red;
+  }
+  .pt-top{
+    margin-top: 32px;
+  }
+  .ptt-top{
+    margin-top: 3px;
+  }
+  .role{
+    margin-top: -5px;
+  }
+  @media screen {
+    
+  }
+  @media only screen and (max-width: 767px) {
+    .pt-top{
+      margin-top: 23px;
+    }
+  }
+  @media only screen and (max-width: 576px) {
+    .camera-top{
+        top: 17px;
+        right: -0px;
+    }
+    .pt-top{
+      margin-top: 12px;
+    }
+    .circular-image {
+        position: relative; /* Ensure the iconC is positioned relative to this div */
+        width: 100px; /* Adjust as needed */
+        height: 100px; /* Adjust as needed */
+        border-radius: 50%; /* Make the div circular */
+         /* Ensure the icon doesn't overflow the circular div */
+      }
+  }
+  @media only screen and (max-width: 576px) {
+    .camera-top{
+        top: 17px;
+        right: -0px;
+    }
+    .pt-top{
+      margin-top: 12px;
+    }
+    .circular-image {
+        position: relative; 
+        width: 80px; 
+        height: 80px; 
+        border-radius: 50%; 
+        
+      }
+  }
+
+  

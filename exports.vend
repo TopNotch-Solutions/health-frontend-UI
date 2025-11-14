@@ -1,0 +1,183 @@
+exports.vend = async (req, res) => {
+  let { meterNumber, mcode, mobileNumber, amount } = req.body;
+
+  if (!mobileNumber || !amount || !meterNumber || !mcode) {
+    return res.status(400).json({
+      message:
+        "Missing parameter or parameters. Allowed parameters are mobileNumber, meterNumber, amount and mcode",
+    });
+  }
+
+  try {
+    const codes = await MCode.findAll({
+      where: {
+        expiresAt: { [Op.gt]: new Date() },
+      },
+    });
+
+    let matchedCode = null;
+    for (const code of codes) {
+      const isValid = await bcrypt.compare(mcode, code.mcode);
+      if (isValid) {
+        matchedCode = code;
+        break;
+      }
+    }
+
+    if (!matchedCode) {
+      await MCode.destroy({
+        where: {
+          expiresAt: {
+            [Op.lt]: new Date(),
+          },
+        },
+      });
+
+      return res.status(404).json({
+        status: "FAILURE",
+        message: "Invalid or expired code.",
+      });
+    }
+
+    const secondApiCall = await fetch(
+      "https://api.mtc.com.na/maris/txn/2.0/executeMerchantPaymentTransaction",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik5UZG1aak00WkRrM05qWTBZemM1TW1abU9EZ3dNVEUzTVdZd05ERTVNV1JsWkRnNE56YzRaQT09In0.eyJhdWQiOiJodHRwOlwvXC9vcmcud3NvMi5hcGltZ3RcL2dhdGV3YXkiLCJzdWIiOiJhZG1pbkBjYXJib24uc3VwZXIiLCJhcHBsaWNhdGlvbiI6eyJvd25lciI6ImFkbWluIiwidGllclF1b3RhVHlwZSI6InJlcXVlc3RDb3VudCIsInRpZXIiOiJVbmxpbWl0ZWQiLCJuYW1lIjoiTVRDLU1BUklTIiwiaWQiOjE3MCwidXVpZCI6bnVsbH0sInNjb3BlIjoiYW1fYXBwbGljYXRpb25fc2NvcGUgZGVmYXVsdCIsImlzcyI6Imh0dHBzOlwvXC9tdGNwcmRhcGlndzEubXRjZGMuY29tLm5hOjk0NDNcL29hdXRoMlwvdG9rZW4iLCJ0aWVySW5mbyI6eyJCcm9uemUiOnsidGllclF1b3RhVHlwZSI6InJlcXVlc3RDb3VudCIsInN0b3BPblF1b3RhUmVhY2giOnRydWUsInNwaWtlQXJyZXN0TGltaXQiOjAsInNwaWtlQXJyZXN0VW5pdCI6bnVsbH0sIkdvbGQiOnsidGllclF1b3RhVHlwZSI6InJlcXVlc3RDb3VudCIsInN0b3BPblF1b3RhUmVhY2giOnRydWUsInNwaWtlQXJyZXN0TGltaXQiOjAsInNwaWtlQXJyZXN0VW5pdCI6bnVsbH0sIlVubGltaXRlZCI6eyJ0aWVyUXVvdGFUeXBlIjoicmVxdWVzdENvdW50Iiwic3RvcE9uUXVvdGFSZWFjaCI6dHJ1ZSwic3Bpa2VBcnJlc3RMaW1pdCI6MCwic3Bpa2VBcnJlc3RVbml0IjpudWxsfX0sImtleXR5cGUiOiJQUk9EVUNUSU9OIiwic3Vic2NyaWJlZEFQSXMiOlt7InN1YnNjcmliZXJUZW5hbnREb21haW4iOiJjYXJib24uc3VwZXIiLCJuYW1lIjoiTUFSSVMtUVVFUlktQVBJIiwiY29udGV4dCI6IlwvdjFcL21hcmlzLXF1ZXJ5IiwicHVibGlzaGVyIjoiYWRtaW4iLCJ2ZXJzaW9uIjoidjEiLCJzdWJzY3JpcHRpb25UaWVyIjoiVW5saW1pdGVkIn0seyJzdWJzY3JpYmVyVGVuYW50RG9tYWluIjoiY2FyYm9uLnN1cGVyIiwibmFtZSI6Ik1BUklTLVRSQU5TQUNUSU9OLUFQSSIsImNvbnRleHQiOiJcL3YxXC9tYXJpcy10eG4iLCJwdWJsaXNoZXIiOiJhZG1pbiIsInZlcnNpb24iOiJ2MSIsInN1YnNjcmlwdGlvblRpZXIiOiJVbmxpbWl0ZWQifSx7InN1YnNjcmliZXJUZW5hbnREb21haW4iOiJjYXJib24uc3VwZXIiLCJuYW1lIjoiTVRDLUlOSE9VU0UtU0VSVklDRVMiLCJjb250ZXh0IjoiXC9pbmhvdXNlLXVhdFwvMS4wIiwicHVibGlzaGVyIjoiYWRtaW4iLCJ2ZXJzaW9uIjoiMS4wIiwic3Vic2NyaXB0aW9uVGllciI6IkJyb256ZSJ9LHsic3Vic2NyaWJlclRlbmFudERvbWFpbiI6ImNhcmJvbi5zdXBlciIsIm5hbWUiOiJNQVJJUy1UUlgtVUFUIiwiY29udGV4dCI6IlwvbWFyaXNcL3R4blwvMi4wIiwicHVibGlzaGVyIjoiYWRtaW4iLCJ2ZXJzaW9uIjoiMi4wIiwic3Vic2NyaXB0aW9uVGllciI6IkdvbGQifV0sImNvbnN1bWVyS2V5IjoiWEtybDVyMW4zWl9EUGRyazZ3cmszbGg3bDBBYSIsImV4cCI6Mzg1NTk4OTIzNSwiaWF0IjoxNzA4NTA1NTg4LCJqdGkiOiIzYzE5YWFmZi02YTQwLTRjYjktOTRhOC04MDkzY2VmZjhmOTEifQ.VYlmvuzVgTZ2-oiazjNy_uWqDvdRCpQwuP5ZUjF_A0I0co2_AyEzEBFsbpPDvJw003g3sKpd8c5ZwdPg9WxX-OgGuEgoTcpsp0pelPKThfB7P0x6URr7uW-Wu1gfv3DqhEXTrc2s4803N97hQlojIX1KUwq5ceLpzkZmuomzULNyJ8N8DQLGO13rRqQrwpeDvO3gxk07uiVNafmdj81w0aOCykVFeRY7LVqu3k6TU8YU5lB0yezpLHnviEC1ZdRTfJC06ztVA1IG_XVNW-DBzRZaQDsczqK-bXSyy9b-1xfNwLJsWWMq6ld0C4cA_tP3xeBjbh7LQmLTg1tiadA8VA",
+        },
+        body: JSON.stringify({
+          amount,
+          channelMask: "2002",
+          currency: "NAD",
+          mcode,
+          mobileNumber,
+          reason: "Payment to merchant account for services rendered",
+          receiverMobileNumber: "264818133436",
+          receiverServiceMask: "MERCHANT_PAY_RECEIPT",
+          senderServiceMask: "MERCHANT_PAY_SEND",
+          transactionSubType: "MERCHANT_PAYMENT",
+          userName: "TC",
+          merchantId: "202269730",
+          requestType: "PULL",
+        }),
+      }
+    );
+
+    const secondApiResponse = await secondApiCall.json();
+    if (secondApiResponse.response.code !== "0000") {
+      return res.status(404).json({ message: secondApiResponse.response });
+    }
+
+    const dateTime = new Date()
+      .toISOString()
+      .replace(/[-T:]/g, "")
+      .split(".")[0];
+    const uniqueNumber = Math.floor(Math.random() * 99998);
+
+    const xmlRequest = `<?xml version="1.0" encoding="UTF-8"?>
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns="http://www.syntell.net/S3WebServices/schemas/2005/09">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <ns:vendReq>
+                    <ns:partnerID>BCX</ns:partnerID>
+                    <ns:localAuthCode>TST</ns:localAuthCode>
+                    <ns:clientID>BCX01</ns:clientID>
+                    <ns:terminalID>BCX01</ns:terminalID>
+                    <ns:msgID>
+                        <ns:dateTime>${dateTime}</ns:dateTime>
+                        <ns:uniqueNumber>${uniqueNumber}</ns:uniqueNumber>
+                    </ns:msgID>
+                    <ns:securityKey>78963957</ns:securityKey>
+                    <ns:operator>Ricardo</ns:operator>
+                    <ns:serialNo>${meterNumber}</ns:serialNo>
+                    <ns:amount>${amount}</ns:amount>
+                </ns:vendReq>
+            </soapenv:Body>
+        </soapenv:Envelope>`;
+
+    const sendRequestWithRetry = async (attempt = 1) => {
+      try {
+        const response = await fetch(
+          "http://biztalktest3.syntell.net/ElectricityVendingWS/WcfService_ElectricityVendingWS.svc",
+          {
+            method: "POST",
+            headers: {
+              SOAPAction:
+                "http://www.syntell.net/S3WebServices/schemas/2005/09/VendRequest",
+              "Content-Type": "text/xml",
+            },
+            body: xmlRequest,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+        return await response.text();
+      } catch (error) {
+        if (attempt < 3) {
+          console.log(`Retry attempt ${attempt} failed. Retrying...`);
+          return await sendRequestWithRetry(attempt + 1);
+        }
+        console.error(`All retry attempts failed: ${error.message}`);
+        await FailedTransaction.create({
+          meterNumber,
+          mobileNumber,
+          mcode,
+          amount,
+          errorMessage: error.message
+        });
+        throw new Error("Vending unsuccessful. Contact help desk to get your money back");
+      }
+    };
+
+    const responseData = await sendRequestWithRetry();
+
+    // Convert XML response to JSON using Promise
+    const xmlResult = await new Promise((resolve, reject) => {
+      xml2js.parseString(responseData, { explicitArray: false, trim: true }, (err, result) => {
+        if (err) reject(new Error(`Failed to parse XML response: ${err.message}`));
+        else resolve(result);
+      });
+    });
+
+    const body = xmlResult["s:Envelope"]["s:Body"];
+    
+    if (body['ns0:vendResp']) {
+      const vendResp = body['ns0:vendResp'];
+      return res.json({
+        partnerID: vendResp['ns0:partnerID'],
+        clientID: vendResp['ns0:clientID'],
+        terminalID: vendResp['ns0:terminalID'],
+        customerDetail: vendResp['ns0:customerDetail'],
+        meterDetail: vendResp['ns0:meterDetail'],
+        utilityDetail: vendResp['ns0:utilityDetail'],
+        tokens: Array.isArray(vendResp['ns0:token']) ? vendResp['ns0:token'] : [vendResp['ns0:token']],
+        chargedUnits: vendResp['ns0:chargedUnits'],
+        vat: vendResp['ns0:vat'],
+        receiptNo: vendResp['ns0:receiptNo'],
+        dispHeader: vendResp['ns0:dispHeader']
+      });
+    }
+
+    if (body["s:Fault"]) {
+      const fault = body["s:Fault"];
+      return res.status(400).json({
+        errorCode: fault.faultstring?.match(/<ns0:errorCode>(.*?)<\/ns0:errorCode>/)?.[1] || "Unknown",
+        message: fault.faultstring?.match(/<ns0:fault>(.*?)<\/ns0:fault>/)?.[1] || "Unknown error",
+      });
+    }
+
+    return res.status(500).json({ error: "Unexpected response format" });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ 
+      error: "Internal Server Error", 
+      message: error.message 
+    });
+  }
+}; 
