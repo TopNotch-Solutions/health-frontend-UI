@@ -47,7 +47,7 @@ function Dashboard() {
       try {
         // Fetch dashboard stats
         const statsResponse = await fetchJSON(
-          "http://localhost:4000/api/portal/auth/dashboard-stats",
+          "http://13.61.152.64:4000/api/portal/auth/dashboard-stats",
           "GET"
         );
 
@@ -72,7 +72,7 @@ function Dashboard() {
         // Fetch specializations count
         try {
           const specResponse = await fetchJSON(
-            "http://localhost:4000/api/portal/specialization/all-specializations",
+            "http://13.61.152.64:4000/api/portal/specialization/all-specializations",
             "GET"
           );
           if (specResponse.specializations) {
@@ -85,7 +85,7 @@ function Dashboard() {
         // Fetch ailments count
         try {
           const ailmentResponse = await fetchJSON(
-            "http://localhost:4000/api/portal/aligment/all-alignments",
+            "http://13.61.152.64:4000/api/portal/aligment/all-alignments",
             "GET"
           );
           if (ailmentResponse.ailments) {
@@ -98,7 +98,7 @@ function Dashboard() {
         // Fetch FAQs count
         try {
           const faqResponse = await fetchJSON(
-            "http://localhost:4000/api/portal/faq/all-faq",
+            "http://13.61.152.64:4000/api/portal/faq/all-faq",
             "GET"
           );
           if (faqResponse.faqs) {

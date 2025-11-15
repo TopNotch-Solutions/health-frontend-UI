@@ -1,6 +1,6 @@
 {
-  "short_name": "Health Connect",
-  "name": "Health Connect",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "favicon.ico",

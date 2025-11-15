@@ -6,7 +6,7 @@ const useFetch = () => {
   const [error, setError] = useState(null);
 
   const request = useCallback(async (url, method = 'GET', body = null, headers = {}) => {
-    const baseURL = 'http://localhost:4000';
+    const baseURL = 'http://13.61.152.64:4000';
     const fullURL = `${baseURL}${url}`;
 
     setLoading(true);

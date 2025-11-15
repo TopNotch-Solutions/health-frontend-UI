@@ -80,7 +80,7 @@ const AdminLogin = () => {
       setIsSubmitting(true);
       try {
         const response = await fetchJSON(
-          "http://localhost:4000/api/portal/auth/login",
+          "http://13.61.152.64:4000/api/portal/auth/login",
           "POST",
           {
             email,

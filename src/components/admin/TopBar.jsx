@@ -37,7 +37,7 @@ const Topbar = ({ OpenSidebar }) => {
 
       try {
         const response = await fetchJSON(
-          `http://localhost:4000/api/portal/notification/unread-count/${currentUser._id}`,
+          `http://13.61.152.64:4000/api/portal/notification/unread-count/${currentUser._id}`,
           "GET"
         );
 
@@ -159,7 +159,7 @@ const Topbar = ({ OpenSidebar }) => {
         <div className="user-avatar">
           <Avatar
             alt="User Profile"
-            src={currentUser?.profileImage ? `http://localhost:4000/images/${currentUser.profileImage}` : undefined}
+            src={currentUser?.profileImage ? `http://13.61.152.64:4000/images/${currentUser.profileImage}` : undefined}
             sx={{
               bgcolor: currentUser?.profileImage ? undefined : "#1976d2",
               width: 40,

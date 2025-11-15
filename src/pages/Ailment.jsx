@@ -71,7 +71,7 @@ export default function Ailment() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "http://localhost:4000/api/portal/aligment/all-alignments",
+        "http://13.61.152.64:4000/api/portal/aligment/all-alignments",
         "GET"
       );
       if (response.ailments) {
@@ -97,7 +97,7 @@ export default function Ailment() {
   const fetchSpecializations = async () => {
     try {
       const response = await fetchJSON(
-        "http://localhost:4000/api/portal/specialization/all-specializations",
+        "http://13.61.152.64:4000/api/portal/specialization/all-specializations",
         "GET"
       );
       if (response.specializations) {
@@ -140,7 +140,7 @@ export default function Ailment() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `http://localhost:4000/api/portal/aligment/update-alignment/${currentAilment.id}`,
+          `http://13.61.152.64:4000/api/portal/aligment/update-alignment/${currentAilment.id}`,
           "PUT",
           {
             title: currentAilment.title,
@@ -156,7 +156,7 @@ export default function Ailment() {
         }
       } else {
         const response = await fetchJSON(
-          "http://localhost:4000/api/portal/aligment/create-alignment",
+          "http://13.61.152.64:4000/api/portal/aligment/create-alignment",
           "POST",
           {
             title: currentAilment.title,
@@ -184,7 +184,7 @@ export default function Ailment() {
     if (window.confirm('Are you sure you want to delete this ailment?')) {
       try {
         const response = await fetchJSON(
-          `http://localhost:4000/api/portal/aligment/delete-alignment/${id}`,
+          `http://13.61.152.64:4000/api/portal/aligment/delete-alignment/${id}`,
           "DELETE"
         );
         if (response.message) {

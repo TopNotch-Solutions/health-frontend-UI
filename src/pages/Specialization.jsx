@@ -69,7 +69,7 @@ export default function Specialization() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "http://localhost:4000/api/portal/specialization/all-specializations",
+        "http://13.61.152.64:4000/api/portal/specialization/all-specializations",
         "GET"
       );
       if (response.specializations) {
@@ -116,7 +116,7 @@ export default function Specialization() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `http://localhost:4000/api/portal/specialization/update-specialization/${currentSpecialization.id}`,
+          `http://13.61.152.64:4000/api/portal/specialization/update-specialization/${currentSpecialization.id}`,
           "PUT",
           {
             title: currentSpecialization.title,
@@ -131,7 +131,7 @@ export default function Specialization() {
         }
       } else {
         const response = await fetchJSON(
-          "http://localhost:4000/api/portal/specialization/add-new-specialization",
+          "http://13.61.152.64:4000/api/portal/specialization/add-new-specialization",
           "POST",
           {
             title: currentSpecialization.title,
@@ -158,7 +158,7 @@ export default function Specialization() {
     if (window.confirm('Are you sure you want to delete this specialization?')) {
       try {
         const response = await fetchJSON(
-          `http://localhost:4000/api/portal/specialization/delete-specialization/${id}`,
+          `http://13.61.152.64:4000/api/portal/specialization/delete-specialization/${id}`,
           "DELETE"
         );
         if (response.message) {

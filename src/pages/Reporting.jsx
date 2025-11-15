@@ -137,7 +137,7 @@ function Reporting() {
 
       switch (reportType) {
         case 'users':
-          response = await fetchJSON("http://localhost:4000/api/app/auth/all-users", "GET");
+          response = await fetchJSON("http://13.61.152.64:4000/api/app/auth/all-users", "GET");
           if (response.status === true && response.users) {
             data = response.users.map((user, index) => ({
               ...user,
@@ -147,7 +147,7 @@ function Reporting() {
           cols = userColumns;
           break;
         case 'admins':
-          response = await fetchJSON("http://localhost:4000/api/portal/auth/all-users", "GET");
+          response = await fetchJSON("http://13.61.152.64:4000/api/portal/auth/all-users", "GET");
           if (response.status === true && response.users) {
             data = response.users.map((user, index) => ({
               ...user,
@@ -157,7 +157,7 @@ function Reporting() {
           cols = adminColumns;
           break;
         case 'transactions':
-          response = await fetchJSON("http://localhost:4000/api/app/transaction/all-transactions", "GET");
+          response = await fetchJSON("http://13.61.152.64:4000/api/app/transaction/all-transactions", "GET");
           if (response.status === true && response.transactions) {
             data = response.transactions.map((transaction, index) => ({
               ...transaction,
@@ -167,7 +167,7 @@ function Reporting() {
           cols = transactionColumns;
           break;
         case 'issues':
-          response = await fetchJSON("http://localhost:4000/api/app/issue/all-issues", "GET");
+          response = await fetchJSON("http://13.61.152.64:4000/api/app/issue/all-issues", "GET");
           if (response.status === true && response.issues) {
             data = response.issues.map((issue, index) => ({
               ...issue,
@@ -177,7 +177,7 @@ function Reporting() {
           cols = issueColumns;
           break;
         case 'specializations':
-          response = await fetchJSON("http://localhost:4000/api/portal/specialization/all-specializations", "GET");
+          response = await fetchJSON("http://13.61.152.64:4000/api/portal/specialization/all-specializations", "GET");
           if (response.specializations) {
             data = response.specializations.map((spec, index) => ({
               ...spec,
@@ -187,7 +187,7 @@ function Reporting() {
           cols = specializationColumns;
           break;
         case 'ailments':
-          response = await fetchJSON("http://localhost:4000/api/portal/aligment/all-alignments", "GET");
+          response = await fetchJSON("http://13.61.152.64:4000/api/portal/aligment/all-alignments", "GET");
           if (response.ailments) {
             data = response.ailments.map((ailment, index) => ({
               ...ailment,
@@ -197,7 +197,7 @@ function Reporting() {
           cols = ailmentColumns;
           break;
         case 'faqs':
-          response = await fetchJSON("http://localhost:4000/api/portal/faq/all-faq", "GET");
+          response = await fetchJSON("http://13.61.152.64:4000/api/portal/faq/all-faq", "GET");
           if (response.faqs) {
             data = response.faqs.map((faq, index) => ({
               ...faq,

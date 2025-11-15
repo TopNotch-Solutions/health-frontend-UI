@@ -86,7 +86,7 @@ export default function User() {
       setIsLoading(true);
       try {
         const response = await fetchJSON(
-          "http://localhost:4000/api/portal/auth/all-users",
+          "http://13.61.152.64:4000/api/portal/auth/all-users",
           "GET"
         );
         if (response.status === true && response.users) {
@@ -190,7 +190,7 @@ export default function User() {
         setSnackbarSeverity('warning');
       } else {
         const response = await fetchJSON(
-          "http://localhost:4000/api/portal/auth/create-portal-user",
+          "http://13.61.152.64:4000/api/portal/auth/create-portal-user",
           "POST",
           {
             firstName: currentAdmin.firstName,
@@ -208,7 +208,7 @@ export default function User() {
           setSnackbarSeverity('success');
           // Refresh users list
           const usersResponse = await fetchJSON(
-            "http://localhost:4000/api/portal/auth/all-users",
+            "http://13.61.152.64:4000/api/portal/auth/all-users",
             "GET"
           );
           if (usersResponse.status === true && usersResponse.users) {
@@ -270,7 +270,7 @@ export default function User() {
         const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
         const initials = (firstInitial + lastInitial) || (firstInitial || lastInitial) || 'U';
         const profileImageUrl = params.row.profileImage 
-          ? `http://localhost:4000/images/${params.row.profileImage}` 
+          ? `http://13.61.152.64:4000/images/${params.row.profileImage}` 
           : null;
         
         return (

@@ -67,7 +67,7 @@ export default function Bso() {
       setIsLoading(true);
       try {
         const response = await fetchJSON(
-          "http://localhost:4000/api/app/transaction/all-transactions",
+          "http://13.61.152.64:4000/api/app/transaction/all-transactions",
           "GET"
         );
         if (response.status === true && response.transactions) {
