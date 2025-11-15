@@ -129,6 +129,14 @@ export default function Registration() {
           ...user,
           id: user._id || user.id,
         }));
+        // Debug: Check if region and profileImage are present
+        if (normalizedUsers.length > 0) {
+          console.log('Sample user data:', {
+            fullname: normalizedUsers[0].fullname,
+            region: normalizedUsers[0].region,
+            profileImage: normalizedUsers[0].profileImage
+          });
+        }
         setUsers(normalizedUsers);
         setFilteredUsers(normalizedUsers);
       }
@@ -300,6 +308,12 @@ export default function Registration() {
   };
 
   const openDocumentsDialog = (user) => {
+    console.log('Opening documents dialog for user:', {
+      fullname: user.fullname,
+      region: user.region,
+      profileImage: user.profileImage,
+      allFields: user
+    });
     setSelectedUserForDocuments(user);
     setDocumentsDialogOpen(true);
   };
@@ -414,32 +428,10 @@ export default function Registration() {
                   e.stopPropagation();
                   openDocumentsDialog(params.row);
                 }}
-                title="View Documents"
+                title="View Documents & Approve/Reject"
                 color="info"
               >
                 <VisibilityIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleApproveDocuments(params.row.id || params.row._id);
-                }}
-                title="Approve Documents"
-                color="success"
-              >
-                <ThumbUpIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openRejectDialog(params.row.id || params.row._id);
-                }}
-                title="Reject Documents"
-                color="error"
-              >
-                <ThumbDownIcon fontSize="small" />
               </IconButton>
             </>
           )}
@@ -456,17 +448,21 @@ export default function Registration() {
               <VisibilityIcon fontSize="small" />
             </IconButton>
           )}
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenDialog(params.row);
-            }}
-            title="Edit"
-            color="primary"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
+          {/* View Details button for all users (patients and health providers without pending documents) */}
+          {(!isHealthProvider(params.row.role) || 
+            (isHealthProvider(params.row.role) && !params.row.isDocumentsSubmitted)) && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                openDocumentsDialog(params.row);
+              }}
+              title="View User Details"
+              color="info"
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -573,13 +569,6 @@ export default function Registration() {
                 <Typography variant="h5">
                   All Users
                 </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<PersonAddIcon />}
-                  onClick={() => handleOpenDialog()}
-                >
-                  Add New User
-                </Button>
               </Stack>
 
               {/* Search and Filters */}
@@ -960,72 +949,363 @@ export default function Registration() {
         fullWidth
       >
         <DialogTitle>
-          Documents - {selectedUserForDocuments?.fullname || 'User'}
+          User Registration - {selectedUserForDocuments?.fullname || 'User'}
         </DialogTitle>
         <DialogContent>
           {selectedUserForDocuments && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>ID Document Front</Typography>
-                {selectedUserForDocuments.idDocumentFront ? (
-                  <img
-                    src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentFront}`}
-                    alt="ID Document Front"
-                    style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid #ddd' }}
+            <>
+              {/* User Information - Readonly */}
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>User Information</Typography>
+                  <Divider sx={{ mb: 2 }} />
+                </Grid>
+                {/* Profile Image */}
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>Profile Image</Typography>
+                  {selectedUserForDocuments.profileImage ? (
+                    <Avatar
+                      src={`http://localhost:4000/images/${selectedUserForDocuments.profileImage}`}
+                      alt={selectedUserForDocuments.fullname || 'User'}
+                      sx={{ width: 120, height: 120, mb: 2 }}
+                    >
+                      {selectedUserForDocuments.fullname ? selectedUserForDocuments.fullname.charAt(0).toUpperCase() : 'U'}
+                    </Avatar>
+                  ) : (
+                    <Avatar sx={{ width: 120, height: 120, mb: 2 }}>
+                      {selectedUserForDocuments.fullname ? selectedUserForDocuments.fullname.charAt(0).toUpperCase() : 'U'}
+                    </Avatar>
+                  )}
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Full Name"
+                    value={selectedUserForDocuments.fullname || ''}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
                   />
-                ) : (
-                  <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Cellphone Number"
+                    value={selectedUserForDocuments.cellphoneNumber || ''}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Wallet ID"
+                    value={selectedUserForDocuments.walletID || ''}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Role"
+                    value={selectedUserForDocuments.role || ''}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Address"
+                    value={selectedUserForDocuments.address || ''}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Region"
+                    value={selectedUserForDocuments.region || 'Not specified'}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Email"
+                    value={selectedUserForDocuments.email || 'Not provided'}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Date of Birth"
+                    value={selectedUserForDocuments.dateOfBirth ? new Date(selectedUserForDocuments.dateOfBirth).toLocaleDateString() : 'Not provided'}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Gender"
+                    value={selectedUserForDocuments.gender || 'Not provided'}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="National ID"
+                    value={selectedUserForDocuments.nationalID || selectedUserForDocuments.nationalId || 'Not provided'}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Account Verified"
+                    value={selectedUserForDocuments.isAccountVerified ? 'Yes' : 'No'}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    variant="outlined"
+                  />
+                </Grid>
+                {isHealthProvider(selectedUserForDocuments.role) && (
+                  <>
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Health Provider Details</Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="HPCNA Number"
+                        value={selectedUserForDocuments.hpcnaNumber || 'Not provided'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="HPCNA Expiry Date"
+                        value={selectedUserForDocuments.hpcnaExpiryDate ? new Date(selectedUserForDocuments.hpcnaExpiryDate).toLocaleDateString() : 'Not provided'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Operational Zone"
+                        value={selectedUserForDocuments.operationalZone || 'Not provided'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Years of Experience"
+                        value={selectedUserForDocuments.yearsOfExperience || 'Not provided'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Document Verification Status"
+                        value={selectedUserForDocuments.isDocumentVerified ? 'Verified' : 'Pending'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Documents Submitted"
+                        value={selectedUserForDocuments.isDocumentsSubmitted ? 'Yes' : 'No'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                  </>
                 )}
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>ID Document Back</Typography>
-                {selectedUserForDocuments.idDocumentBack ? (
-                  <img
-                    src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentBack}`}
-                    alt="ID Document Back"
-                    style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid #ddd' }}
-                  />
-                ) : (
-                  <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                )}
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>Primary Qualification</Typography>
-                {selectedUserForDocuments.primaryQualification ? (
-                  <img
-                    src={`http://localhost:4000/images/${selectedUserForDocuments.primaryQualification}`}
-                    alt="Primary Qualification"
-                    style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid #ddd' }}
-                  />
-                ) : (
-                  <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                )}
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>Annual Qualification</Typography>
-                {selectedUserForDocuments.annualQualification ? (
-                  <img
-                    src={`http://localhost:4000/images/${selectedUserForDocuments.annualQualification}`}
-                    alt="Annual Qualification"
-                    style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid #ddd' }}
-                  />
-                ) : (
-                  <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                )}
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>Profile Image</Typography>
-                {selectedUserForDocuments.profileImage ? (
-                  <img
-                    src={`http://localhost:4000/images/${selectedUserForDocuments.profileImage}`}
-                    alt="Profile Image"
-                    style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid #ddd' }}
-                  />
-                ) : (
-                  <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                )}
-              </Grid>
-            </Grid>
+
+              {/* Documents Section - Only show for health providers with documents */}
+              {isHealthProvider(selectedUserForDocuments.role) && selectedUserForDocuments.isDocumentsSubmitted && (
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>Submitted Documents</Typography>
+                    <Divider sx={{ mb: 2 }} />
+                  </Grid>
+                <Grid item xs={12} sm={6} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                      ID Document Front
+                    </Typography>
+                    {selectedUserForDocuments.idDocumentFront ? (
+                      <Box
+                        component="img"
+                        src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentFront}`}
+                        alt="ID Document Front"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 400,
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: 1,
+                          backgroundColor: '#f5f5f5',
+                          p: 1
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: 200,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 2,
+                          border: '1px dashed #e0e0e0',
+                          backgroundColor: '#fafafa'
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                      ID Document Back
+                    </Typography>
+                    {selectedUserForDocuments.idDocumentBack ? (
+                      <Box
+                        component="img"
+                        src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentBack}`}
+                        alt="ID Document Back"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 400,
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: 1,
+                          backgroundColor: '#f5f5f5',
+                          p: 1
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: 200,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 2,
+                          border: '1px dashed #e0e0e0',
+                          backgroundColor: '#fafafa'
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                      Primary Qualification
+                    </Typography>
+                    {selectedUserForDocuments.primaryQualification ? (
+                      <Box
+                        component="img"
+                        src={`http://localhost:4000/images/${selectedUserForDocuments.primaryQualification}`}
+                        alt="Primary Qualification"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 400,
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: 1,
+                          backgroundColor: '#f5f5f5',
+                          p: 1
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: 200,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 2,
+                          border: '1px dashed #e0e0e0',
+                          backgroundColor: '#fafafa'
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                      Annual Qualification
+                    </Typography>
+                    {selectedUserForDocuments.annualQualification ? (
+                      <Box
+                        component="img"
+                        src={`http://localhost:4000/images/${selectedUserForDocuments.annualQualification}`}
+                        alt="Annual Qualification"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 400,
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: 1,
+                          backgroundColor: '#f5f5f5',
+                          p: 1
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: 200,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 2,
+                          border: '1px dashed #e0e0e0',
+                          backgroundColor: '#fafafa'
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Grid>
+                </Grid>
+              )}
+            </>
           )}
         </DialogContent>
         <DialogActions>
@@ -1035,7 +1315,10 @@ export default function Registration() {
           }}>
             Close
           </Button>
-          {selectedUserForDocuments && !selectedUserForDocuments.isDocumentVerified && selectedUserForDocuments.isDocumentsSubmitted && (
+          {selectedUserForDocuments && 
+           isHealthProvider(selectedUserForDocuments.role) &&
+           !selectedUserForDocuments.isDocumentVerified && 
+           selectedUserForDocuments.isDocumentsSubmitted && (
             <>
               <Button
                 variant="contained"
