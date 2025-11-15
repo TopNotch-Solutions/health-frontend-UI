@@ -46,6 +46,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import { usePermissions } from '../utils/usePermissions';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -69,6 +70,7 @@ const theme = createTheme({
 });
 
 export default function Registration() {
+  const { canRead, canWrite, canDelete } = usePermissions();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -361,14 +363,14 @@ export default function Registration() {
       ),
     },
     { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'fullname', headerName: 'Full Name', width: 150 },
-    { field: 'cellphoneNumber', headerName: 'Phone', width: 150 },
-    { field: 'walletID', headerName: 'Wallet ID', width: 150 },
-    { field: 'balance', headerName: 'Balance', width: 120, renderCell: (params) => `$${params.value.toFixed(2)}` },
+    { field: 'fullname', headerName: 'Full Name', width: 130 },
+    { field: 'cellphoneNumber', headerName: 'Phone', width: 120 },
+    { field: 'walletID', headerName: 'Wallet ID', width: 100 },
+    { field: 'balance', headerName: 'Balance', width: 100, renderCell: (params) => `$${params.value.toFixed(2)}` },
     {
       field: 'role',
       headerName: 'Role',
-      width: 120,
+      width: 110,
       renderCell: (params) => (
         <Chip
           label={params.value}
@@ -381,7 +383,7 @@ export default function Registration() {
     {
       field: 'visibility',
       headerName: 'Status',
-      width: 100,
+      width: 110,
       renderCell: (params) => (
         <Chip
           label={params.value}
@@ -401,9 +403,14 @@ export default function Registration() {
     {
       field: 'isDocumentVerified',
       headerName: 'Doc Status',
-      width: 120,
+      width: 100,
       renderCell: (params) => {
-        if (!isHealthProvider(params.row.role)) {
+        // Show document status for both patients and health providers
+        const hasDocuments = params.row.role === 'patient' 
+          ? (params.row.idDocumentFront && params.row.idDocumentBack && params.row.profileImage)
+          : params.row.isDocumentsSubmitted;
+        
+        if (!hasDocuments) {
           return <Typography variant="body2" color="text.secondary">-</Typography>;
         }
         return params.value ? (
@@ -416,55 +423,91 @@ export default function Registration() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 200,
+      width: 60,
       sortable: false,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {isHealthProvider(params.row.role) && params.row.isDocumentsSubmitted && !params.row.isDocumentVerified && (
-            <>
+      renderCell: (params) => {
+        const isPatient = params.row.role === 'patient';
+        const hasPatientDocuments = isPatient && params.row.idDocumentFront && params.row.idDocumentBack && params.row.profileImage;
+        const hasHealthProviderDocuments = isHealthProvider(params.row.role) && params.row.isDocumentsSubmitted;
+        const hasPendingVerification = hasPatientDocuments && !params.row.isDocumentVerified;
+        const hasHealthProviderPending = hasHealthProviderDocuments && !params.row.isDocumentVerified;
+        const isVerified = params.row.isDocumentVerified;
+
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {/* Show approve/reject button for patients with pending documents */}
+            {hasPendingVerification && canRead && (
               <IconButton
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
                   openDocumentsDialog(params.row);
                 }}
-                title="View Documents & Approve/Reject"
+                title={canWrite ? "View Documents & Approve/Reject" : "View Documents"}
                 color="info"
               >
                 <VisibilityIcon fontSize="small" />
               </IconButton>
-            </>
-          )}
-          {isHealthProvider(params.row.role) && params.row.isDocumentsSubmitted && params.row.isDocumentVerified && (
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                openDocumentsDialog(params.row);
-              }}
-              title="View Documents"
-              color="info"
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
-          )}
-          {/* View Details button for all users (patients and health providers without pending documents) */}
-          {(!isHealthProvider(params.row.role) || 
-            (isHealthProvider(params.row.role) && !params.row.isDocumentsSubmitted)) && (
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                openDocumentsDialog(params.row);
-              }}
-              title="View User Details"
-              color="info"
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
-          )}
-        </Box>
-      ),
+            )}
+            {/* Show view button for verified patients - can also reject */}
+            {isPatient && hasPatientDocuments && isVerified && canRead && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDocumentsDialog(params.row);
+                }}
+                title={canWrite ? "View Documents & Reject Verification" : "View Documents"}
+                color="info"
+              >
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            )}
+            {/* Show approve/reject button for health providers with pending documents */}
+            {hasHealthProviderPending && canRead && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDocumentsDialog(params.row);
+                }}
+                title={canWrite ? "View Documents & Approve/Reject" : "View Documents"}
+                color="info"
+              >
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            )}
+            {/* Show view button for verified health providers - can also reject */}
+            {hasHealthProviderDocuments && isVerified && canRead && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDocumentsDialog(params.row);
+                }}
+                title={canWrite ? "View Documents & Reject Verification" : "View Documents"}
+                color="info"
+              >
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            )}
+            {/* View Details button for users without documents or pending verification */}
+            {(!hasPatientDocuments && !hasHealthProviderDocuments) && canRead && (
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDocumentsDialog(params.row);
+                }}
+                title="View User Details"
+                color="info"
+              >
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+        );
+      },
     },
   ];
 
@@ -473,7 +516,12 @@ export default function Registration() {
     total: users.length,
     patients: users.filter((user) => user.role === 'patient').length,
     healthProviders: users.filter((user) => isHealthProvider(user.role)).length,
-    pendingVerification: users.filter((user) => isHealthProvider(user.role) && user.isDocumentsSubmitted && !user.isDocumentVerified).length,
+    pendingVerification: users.filter((user) => {
+      const isPatient = user.role === 'patient';
+      const hasPatientDocuments = isPatient && user.idDocumentFront && user.idDocumentBack && user.profileImage;
+      const hasHealthProviderDocuments = isHealthProvider(user.role) && user.isDocumentsSubmitted;
+      return (hasPatientDocuments || hasHealthProviderDocuments) && !user.isDocumentVerified;
+    }).length,
   };
 
   return (
@@ -608,7 +656,7 @@ export default function Registration() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ height: 600, width: '100%' }}>
+              <Box sx={{ height: 600, width: '100%', overflowX: 'auto' }}>
                 <DataGrid
                   rows={filteredUsers}
                   columns={userColumns}
@@ -631,6 +679,7 @@ export default function Registration() {
                   }}
                   pageSizeOptions={[25, 50, 100]}
                   disableRowSelectionOnClick
+                  autoHeight={false}
                 />
               </Box>
             </CardContent>
@@ -1140,6 +1189,85 @@ export default function Registration() {
                 )}
               </Grid>
 
+              {/* Patient Documents Section - Show ID front, ID back, and profile image */}
+              {selectedUserForDocuments.role === 'patient' && 
+               selectedUserForDocuments.idDocumentFront && 
+               selectedUserForDocuments.idDocumentBack && 
+               selectedUserForDocuments.profileImage && (
+                <Grid container spacing={2} sx={{ mt: 2 }}>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>Patient Documents</Typography>
+                    <Divider sx={{ mb: 2 }} />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                        ID Document Front
+                      </Typography>
+                      <Box
+                        component="img"
+                        src={`http://13.61.152.64:4000/images/${selectedUserForDocuments.idDocumentFront}`}
+                        alt="ID Document Front"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 400,
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: 1,
+                          backgroundColor: '#f5f5f5',
+                          p: 1
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                        ID Document Back
+                      </Typography>
+                      <Box
+                        component="img"
+                        src={`http://13.61.152.64:4000/images/${selectedUserForDocuments.idDocumentBack}`}
+                        alt="ID Document Back"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 400,
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: 1,
+                          backgroundColor: '#f5f5f5',
+                          p: 1
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                        Profile Image
+                      </Typography>
+                      <Box
+                        component="img"
+                        src={`http://13.61.152.64:4000/images/${selectedUserForDocuments.profileImage}`}
+                        alt="Profile Image"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 400,
+                          objectFit: 'contain',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: 1,
+                          backgroundColor: '#f5f5f5',
+                          p: 1
+                        }}
+                      />
+                    </Box>
+                  </Grid>
+                </Grid>
+              )}
+
               {/* Documents Section - Only show for health providers with documents */}
               {isHealthProvider(selectedUserForDocuments.role) && selectedUserForDocuments.isDocumentsSubmitted && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
@@ -1315,33 +1443,78 @@ export default function Registration() {
           }}>
             Close
           </Button>
-          {selectedUserForDocuments && 
-           isHealthProvider(selectedUserForDocuments.role) &&
-           !selectedUserForDocuments.isDocumentVerified && 
-           selectedUserForDocuments.isDocumentsSubmitted && (
+          {selectedUserForDocuments && (
             <>
-              <Button
-                variant="contained"
-                color="success"
-                onClick={() => {
-                  handleApproveDocuments(selectedUserForDocuments.id || selectedUserForDocuments._id);
-                  setDocumentsDialogOpen(false);
-                  setSelectedUserForDocuments(null);
-                }}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={() => {
-                  setDocumentsDialogOpen(false);
-                  openRejectDialog(selectedUserForDocuments.id || selectedUserForDocuments._id);
-                  setSelectedUserForDocuments(null);
-                }}
-              >
-                Reject
-              </Button>
+              {/* Buttons for patients */}
+              {selectedUserForDocuments.role === 'patient' &&
+               selectedUserForDocuments.idDocumentFront && 
+               selectedUserForDocuments.idDocumentBack && 
+               selectedUserForDocuments.profileImage && (
+                <>
+                  {/* Approve button for pending documents */}
+                  {!selectedUserForDocuments.isDocumentVerified && canWrite && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() => {
+                        handleApproveDocuments(selectedUserForDocuments.id || selectedUserForDocuments._id);
+                        setDocumentsDialogOpen(false);
+                        setSelectedUserForDocuments(null);
+                      }}
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  {/* Reject button - always available for patients with documents */}
+                  {canWrite && (
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => {
+                        setDocumentsDialogOpen(false);
+                        openRejectDialog(selectedUserForDocuments.id || selectedUserForDocuments._id);
+                        setSelectedUserForDocuments(null);
+                      }}
+                    >
+                      {selectedUserForDocuments.isDocumentVerified ? 'Reject Verification' : 'Reject'}
+                    </Button>
+                  )}
+                </>
+              )}
+              {/* Buttons for health providers */}
+              {isHealthProvider(selectedUserForDocuments.role) &&
+               selectedUserForDocuments.isDocumentsSubmitted && (
+                <>
+                  {/* Approve button for pending documents */}
+                  {!selectedUserForDocuments.isDocumentVerified && canWrite && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() => {
+                        handleApproveDocuments(selectedUserForDocuments.id || selectedUserForDocuments._id);
+                        setDocumentsDialogOpen(false);
+                        setSelectedUserForDocuments(null);
+                      }}
+                    >
+                      Approve
+                    </Button>
+                  )}
+                  {/* Reject button - always available for health providers with documents */}
+                  {canWrite && (
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => {
+                        setDocumentsDialogOpen(false);
+                        openRejectDialog(selectedUserForDocuments.id || selectedUserForDocuments._id);
+                        setSelectedUserForDocuments(null);
+                      }}
+                    >
+                      {selectedUserForDocuments.isDocumentVerified ? 'Reject Verification' : 'Reject'}
+                    </Button>
+                  )}
+                </>
+              )}
             </>
           )}
         </DialogActions>

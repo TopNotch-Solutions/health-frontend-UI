@@ -29,8 +29,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import HealingIcon from '@mui/icons-material/Healing';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
+import { usePermissions } from '../utils/usePermissions';
 
 export default function Ailment() {
+  const { canRead, canWrite, canDelete } = usePermissions();
   const [ailments, setAilments] = useState([]);
   const [specializations, setSpecializations] = useState([]);
   const [filteredAilments, setFilteredAilments] = useState([]);
@@ -181,7 +184,18 @@ export default function Ailment() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this ailment?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this ailment?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
           `http://13.61.152.64:4000/api/portal/aligment/delete-alignment/${id}`,
@@ -191,12 +205,13 @@ export default function Ailment() {
           setSnackbarMessage(response.message);
           setSnackbarSeverity('success');
           fetchAilments();
+          setSnackbarOpen(true);
         }
       } catch (error) {
         setSnackbarMessage(error.message || 'Failed to delete ailment.');
         setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
-      setSnackbarOpen(true);
     }
   };
 
@@ -212,26 +227,30 @@ export default function Ailment() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenDialog(params.row);
-            }}
-            color="primary"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(params.row.id);
-            }}
-            color="error"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {canWrite && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDialog(params.row);
+              }}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(params.row.id);
+              }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -272,13 +291,15 @@ export default function Ailment() {
           <CardContent>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Typography variant="h5">All Ailments</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog()}
-              >
-                Add New
-              </Button>
+              {canWrite && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpenDialog()}
+                >
+                  Add New
+                </Button>
+              )}
             </Stack>
 
             <Box sx={{ mb: 2 }}>

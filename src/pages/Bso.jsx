@@ -31,6 +31,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Backdrop from '@mui/material/Backdrop';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import { usePermissions } from '../utils/usePermissions';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -54,6 +55,7 @@ const theme = createTheme({
 });
 
 export default function Bso() {
+  const { canRead, canWrite, canDelete } = usePermissions();
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,7 +183,7 @@ export default function Bso() {
     { 
       field: 'userId', 
       headerName: 'User', 
-      width: 200,
+      width: 150,
       renderCell: (params) => {
         if (typeof params.value === 'object' && params.value) {
           return params.value.fullname || params.value.email || params.value._id || 'N/A';
@@ -192,7 +194,7 @@ export default function Bso() {
     { 
       field: 'walletID', 
       headerName: 'Wallet ID', 
-      width: 150,
+      width: 100,
       renderCell: (params) => {
         // Check if walletID is in the userId object (populated) or in the transaction
         if (typeof params.row.userId === 'object' && params.row.userId?.walletID) {
@@ -433,7 +435,7 @@ export default function Bso() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ height: 600, width: '100%' }}>
+              <Box sx={{ height: 600, width: '100%', overflowX: 'auto' }}>
                 {isLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                     <CircularProgress />
@@ -464,6 +466,7 @@ export default function Bso() {
                   }}
                     pageSizeOptions={[25, 50, 100]}
                     disableRowSelectionOnClick
+                    autoHeight={false}
                   />
                 )}
               </Box>

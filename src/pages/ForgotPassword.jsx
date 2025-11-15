@@ -6,7 +6,6 @@ import { toast } from "react-toastify";
 import { toggleSidebarfalse } from "../redux/reducers/sidebarReducer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchOAuthToken } from "../utils/fectchOAuthToken";
 
 function ForgotPassword() {
   const [passwordShown, setPasswordShown] = useState(false);
@@ -21,7 +20,6 @@ function ForgotPassword() {
   const queryParams = new URLSearchParams(location.search);
   const userId = queryParams.get('userId');
   const token = queryParams.get('token');
-  const serverToken = useSelector((state) => state.server.serverToken);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -70,15 +68,12 @@ function ForgotPassword() {
     setPasswordError("");
 
     if (validateForm()) {
-      const tokenData = await fetchOAuthToken();
-      if (tokenData.access_token) {
-        try {
+      try {
           setIsSubmitting(true);
           const response = await fetch("https://dt.mtc.com.na:4000/auth/admin/newPassword", {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${tokenData.access_token}`
             },
             
             body: JSON.stringify({
@@ -108,8 +103,6 @@ function ForgotPassword() {
             "Please check your network connection and try again"
           );
         }
-      }
-      
     }
   };
 

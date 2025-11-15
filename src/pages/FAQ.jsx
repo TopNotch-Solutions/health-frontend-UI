@@ -24,8 +24,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
+import { usePermissions } from '../utils/usePermissions';
 
 export default function FAQ() {
+  const { canRead, canWrite, canDelete } = usePermissions();
   const [faqs, setFaqs] = useState([]);
   const [filteredFaqs, setFilteredFaqs] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,7 +148,18 @@ export default function FAQ() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this FAQ?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this FAQ?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
           `http://13.61.152.64:4000/api/portal/faq/delete-faq/${id}`,
@@ -155,12 +169,13 @@ export default function FAQ() {
           setSnackbarMessage(response.message);
           setSnackbarSeverity('success');
           fetchFAQs();
+          setSnackbarOpen(true);
         }
       } catch (error) {
         setSnackbarMessage(error.message || 'Failed to delete FAQ.');
         setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
-      setSnackbarOpen(true);
     }
   };
 
@@ -188,26 +203,30 @@ export default function FAQ() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenDialog(params.row);
-            }}
-            color="primary"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(params.row.id);
-            }}
-            color="error"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {canWrite && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDialog(params.row);
+              }}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(params.row.id);
+              }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -229,13 +248,15 @@ export default function FAQ() {
           <CardContent>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Typography variant="h5">All FAQs</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog()}
-              >
-                Add New FAQ
-              </Button>
+              {canWrite && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpenDialog()}
+                >
+                  Add New FAQ
+                </Button>
+              )}
             </Stack>
 
             <Box sx={{ mb: 2 }}>

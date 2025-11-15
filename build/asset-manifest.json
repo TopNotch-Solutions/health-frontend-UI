@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/static/css/main.08a55fe1.css",
-    "main.js": "/static/js/main.ddb94fe4.js",
+    "main.js": "/static/js/main.b17c7b55.js",
     "static/media/in4logo.png": "/static/media/in4logo.f52a2b410c4c7bb22c90.png",
     "static/media/blank-profile-picture-973460_960_720.webp": "/static/media/blank-profile-picture-973460_960_720.efadb13dba95b5bc918b.webp",
     "index.html": "/index.html",
     "main.08a55fe1.css.map": "/static/css/main.08a55fe1.css.map",
-    "main.ddb94fe4.js.map": "/static/js/main.ddb94fe4.js.map"
+    "main.b17c7b55.js.map": "/static/js/main.b17c7b55.js.map"
   },
   "entrypoints": [
     "static/css/main.08a55fe1.css",
-    "static/js/main.ddb94fe4.js"
+    "static/js/main.b17c7b55.js"
   ]
 }

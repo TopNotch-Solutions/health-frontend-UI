@@ -33,6 +33,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import useFetch from '../utils/fetch';
 import Swal from 'sweetalert2';
+import { usePermissions } from '../utils/usePermissions';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -100,6 +101,7 @@ const mockIssues = [
 ];
 
 export default function Content() {
+  const { canRead, canWrite, canDelete } = usePermissions();
   const { data, loading, error, request } = useFetch();
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -241,17 +243,19 @@ export default function Content() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEditIssue(params.row);
-            }}
-            title="Update Status"
-            color="primary"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
+          {canWrite && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditIssue(params.row);
+              }}
+              title="Update Status"
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
           {/* <IconButton
             size="small"
             onClick={(e) => {
@@ -542,13 +546,15 @@ export default function Content() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleUpdateStatus}
-            disabled={newStatus === selectedIssue?.status}
-          >
-            Update
-          </Button>
+          {canWrite && (
+            <Button
+              variant="contained"
+              onClick={handleUpdateStatus}
+              disabled={newStatus === selectedIssue?.status}
+            >
+              Update
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

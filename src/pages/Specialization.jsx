@@ -17,9 +17,10 @@ import {
   Alert,
   CircularProgress,
   FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  FormLabel,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
@@ -29,8 +30,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
+import { usePermissions } from '../utils/usePermissions';
 
 export default function Specialization() {
+  const { canRead, canWrite, canDelete } = usePermissions();
   const [specializations, setSpecializations] = useState([]);
   const [filteredSpecializations, setFilteredSpecializations] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +45,7 @@ export default function Specialization() {
     id: null,
     title: '',
     description: '',
-    role: '',
+    role: [],
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -59,7 +63,9 @@ export default function Specialization() {
         (spec) =>
           spec.title?.toLowerCase().includes(lowercasedQuery) ||
           spec.description?.toLowerCase().includes(lowercasedQuery) ||
-          spec.role?.toLowerCase().includes(lowercasedQuery)
+          (Array.isArray(spec.role) 
+            ? spec.role.some(r => r?.toLowerCase().includes(lowercasedQuery))
+            : spec.role?.toLowerCase().includes(lowercasedQuery))
       );
     }
     setFilteredSpecializations(filtered);
@@ -77,7 +83,7 @@ export default function Specialization() {
           id: spec._id,
           title: spec.title,
           description: spec.description,
-          role: spec.role,
+          role: Array.isArray(spec.role) ? spec.role : [spec.role].filter(Boolean),
         }));
         setSpecializations(formatted);
         setFilteredSpecializations(formatted);
@@ -93,10 +99,13 @@ export default function Specialization() {
   const handleOpenDialog = (spec = null) => {
     if (spec) {
       setIsEdit(true);
-      setCurrentSpecialization(spec);
+      setCurrentSpecialization({
+        ...spec,
+        role: Array.isArray(spec.role) ? spec.role : [spec.role].filter(Boolean),
+      });
     } else {
       setIsEdit(false);
-      setCurrentSpecialization({ id: null, title: '', description: '', role: '' });
+      setCurrentSpecialization({ id: null, title: '', description: '', role: [] });
     }
     setDialogOpen(true);
   };
@@ -106,14 +115,22 @@ export default function Specialization() {
   };
 
   const handleSubmit = async () => {
-    if (!currentSpecialization.title || !currentSpecialization.description || !currentSpecialization.role) {
-      setSnackbarMessage('Please fill out all required fields.');
+    const roleArray = Array.isArray(currentSpecialization.role) 
+      ? currentSpecialization.role 
+      : [currentSpecialization.role].filter(Boolean);
+    
+    if (!currentSpecialization.title || !currentSpecialization.description || roleArray.length === 0) {
+      setSnackbarMessage('Please fill out all required fields and select at least one category.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
     }
 
     try {
+      const roleArray = Array.isArray(currentSpecialization.role) 
+        ? currentSpecialization.role 
+        : [currentSpecialization.role].filter(Boolean);
+      
       if (isEdit) {
         const response = await fetchJSON(
           `http://13.61.152.64:4000/api/portal/specialization/update-specialization/${currentSpecialization.id}`,
@@ -121,7 +138,7 @@ export default function Specialization() {
           {
             title: currentSpecialization.title,
             description: currentSpecialization.description,
-            role: currentSpecialization.role,
+            role: roleArray,
           }
         );
         if (response.message) {
@@ -136,7 +153,7 @@ export default function Specialization() {
           {
             title: currentSpecialization.title,
             description: currentSpecialization.description,
-            role: currentSpecialization.role,
+            role: roleArray,
           }
         );
         if (response.message) {
@@ -155,7 +172,18 @@ export default function Specialization() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this specialization?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this specialization?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
           `http://13.61.152.64:4000/api/portal/specialization/delete-specialization/${id}`,
@@ -165,12 +193,13 @@ export default function Specialization() {
           setSnackbarMessage(response.message);
           setSnackbarSeverity('success');
           fetchSpecializations();
+          setSnackbarOpen(true);
         }
       } catch (error) {
         setSnackbarMessage(error.message || 'Failed to delete specialization.');
         setSnackbarSeverity('error');
+        setSnackbarOpen(true);
       }
-      setSnackbarOpen(true);
     }
   };
 
@@ -179,8 +208,8 @@ export default function Specialization() {
     { field: 'description', headerName: 'Description', width: 300 },
     { 
       field: 'role', 
-      headerName: 'Category', 
-      width: 180,
+      headerName: 'Categories', 
+      width: 250,
       renderCell: (params) => {
         const roleMap = {
           'doctor': 'Doctor',
@@ -188,7 +217,27 @@ export default function Specialization() {
           'physiotherapist': 'Physiotherapist',
           'social worker': 'Social Worker'
         };
-        return roleMap[params.value] || params.value;
+        const roles = Array.isArray(params.value) ? params.value : [params.value].filter(Boolean);
+        return (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {roles.map((role, index) => (
+              <Typography
+                key={index}
+                variant="body2"
+                sx={{
+                  backgroundColor: 'primary.light',
+                  color: 'primary.contrastText',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  fontSize: '0.75rem',
+                }}
+              >
+                {roleMap[role] || role}
+              </Typography>
+            ))}
+          </Box>
+        );
       }
     },
     {
@@ -198,26 +247,30 @@ export default function Specialization() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenDialog(params.row);
-            }}
-            color="primary"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(params.row.id);
-            }}
-            color="error"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {canWrite && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDialog(params.row);
+              }}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(params.row.id);
+              }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -258,13 +311,15 @@ export default function Specialization() {
           <CardContent>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Typography variant="h5">All Specializations</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog()}
-              >
-                Add New
-              </Button>
+              {canWrite && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpenDialog()}
+                >
+                  Add New
+                </Button>
+              )}
             </Stack>
 
             <Box sx={{ mb: 2 }}>
@@ -324,18 +379,78 @@ export default function Specialization() {
               onChange={(e) => setCurrentSpecialization({ ...currentSpecialization, description: e.target.value })}
               required
             />
-            <FormControl fullWidth required>
-              <InputLabel>Category (Health Provider Role)</InputLabel>
-              <Select
-                value={currentSpecialization.role}
-                label="Category (Health Provider Role)"
-                onChange={(e) => setCurrentSpecialization({ ...currentSpecialization, role: e.target.value })}
-              >
-                <MenuItem value="doctor">Doctor</MenuItem>
-                <MenuItem value="nurse">Nurse</MenuItem>
-                <MenuItem value="physiotherapist">Physiotherapist</MenuItem>
-                <MenuItem value="social worker">Social Worker</MenuItem>
-              </Select>
+            <FormControl fullWidth required component="fieldset">
+              <FormLabel component="legend">Categories (Health Provider Roles)</FormLabel>
+              <FormGroup>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('doctor')}
+                      onChange={(e) => {
+                        const currentRoles = Array.isArray(currentSpecialization.role) 
+                          ? currentSpecialization.role 
+                          : [];
+                        const newRoles = e.target.checked
+                          ? [...currentRoles, 'doctor']
+                          : currentRoles.filter(role => role !== 'doctor');
+                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
+                      }}
+                    />
+                  }
+                  label="Doctor"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('nurse')}
+                      onChange={(e) => {
+                        const currentRoles = Array.isArray(currentSpecialization.role) 
+                          ? currentSpecialization.role 
+                          : [];
+                        const newRoles = e.target.checked
+                          ? [...currentRoles, 'nurse']
+                          : currentRoles.filter(role => role !== 'nurse');
+                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
+                      }}
+                    />
+                  }
+                  label="Nurse"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('physiotherapist')}
+                      onChange={(e) => {
+                        const currentRoles = Array.isArray(currentSpecialization.role) 
+                          ? currentSpecialization.role 
+                          : [];
+                        const newRoles = e.target.checked
+                          ? [...currentRoles, 'physiotherapist']
+                          : currentRoles.filter(role => role !== 'physiotherapist');
+                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
+                      }}
+                    />
+                  }
+                  label="Physiotherapist"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('social worker')}
+                      onChange={(e) => {
+                        const currentRoles = Array.isArray(currentSpecialization.role) 
+                          ? currentSpecialization.role 
+                          : [];
+                        const newRoles = e.target.checked
+                          ? [...currentRoles, 'social worker']
+                          : currentRoles.filter(role => role !== 'social worker');
+                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
+                      }}
+                    />
+                  }
+                  label="Social Worker"
+                />
+              </FormGroup>
             </FormControl>
           </Stack>
         </DialogContent>

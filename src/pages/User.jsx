@@ -22,6 +22,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  Divider,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
@@ -36,6 +40,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useSelector } from 'react-redux';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
+import { usePermissions } from '../utils/usePermissions';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -59,6 +65,7 @@ const theme = createTheme({
 });
 
 export default function User() {
+  const { canRead, canWrite, canDelete } = usePermissions();
   const [admins, setAdmins] = useState([]);
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,6 +82,11 @@ export default function User() {
     password: '',
     department: '',
     role: 'admin',
+    permissions: {
+      read: true,
+      write: false,
+      delete: false,
+    },
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -99,6 +111,7 @@ export default function User() {
             department: user.department,
             profileImage: user.profileImage,
             role: user.role === 'super admin' ? 'Super admin' : user.role === 'health provider' ? 'Health Provider' : 'Admin',
+            permissions: user.permissions || { read: true, write: false, delete: false },
             createdAt: user.createdAt || new Date().toISOString(),
           }));
           setAdmins(formattedUsers);
@@ -142,7 +155,10 @@ export default function User() {
   const handleOpenDialog = (admin = null) => {
     if (admin) {
       setIsEdit(true);
-      setCurrentAdmin(admin);
+      setCurrentAdmin({
+        ...admin,
+        permissions: admin.permissions || { read: true, write: false, delete: false },
+      });
     } else {
       setIsEdit(false);
       setCurrentAdmin({
@@ -154,6 +170,11 @@ export default function User() {
         password: '',
         department: '',
         role: 'Admin',
+        permissions: {
+          read: true,
+          write: false,
+          delete: false,
+        },
       });
     }
     setDialogOpen(true);
@@ -164,8 +185,19 @@ export default function User() {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentAdmin((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    if (name.startsWith('permission.')) {
+      const permissionType = name.split('.')[1];
+      setCurrentAdmin((prev) => ({
+        ...prev,
+        permissions: {
+          ...prev.permissions,
+          [permissionType]: checked,
+        },
+      }));
+    } else {
+      setCurrentAdmin((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    }
   };
 
   const handleSubmit = async () => {
@@ -185,9 +217,44 @@ export default function User() {
 
     try {
       if (isEdit) {
-        // Update user - Note: Backend doesn't have update endpoint yet, so this is a placeholder
-        setSnackbarMessage('Update functionality coming soon!');
-        setSnackbarSeverity('warning');
+        const response = await fetchJSON(
+          `http://13.61.152.64:4000/api/portal/auth/update-user/${currentAdmin.id}`,
+          "PUT",
+          {
+            firstName: currentAdmin.firstName,
+            lastName: currentAdmin.lastName,
+            cellphoneNumber: currentAdmin.cellphoneNumber || currentAdmin.contactNumber,
+            email: currentAdmin.email,
+            department: currentAdmin.department,
+            permissions: currentAdmin.permissions,
+          }
+        );
+        
+        if (response.status || response.message) {
+          setSnackbarMessage(response.message || 'Administrator updated successfully!');
+          setSnackbarSeverity('success');
+          // Refresh users list
+          const usersResponse = await fetchJSON(
+            "http://13.61.152.64:4000/api/portal/auth/all-users",
+            "GET"
+          );
+          if (usersResponse.status === true && usersResponse.users) {
+            const formattedUsers = usersResponse.users.map((user) => ({
+              id: user._id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              contactNumber: user.cellphoneNumber,
+              email: user.email,
+              department: user.department,
+              profileImage: user.profileImage,
+              role: user.role === 'super admin' ? 'Super admin' : user.role === 'health provider' ? 'Health Provider' : 'Admin',
+              permissions: user.permissions || { read: true, write: false, delete: false },
+              createdAt: user.createdAt || new Date().toISOString(),
+            }));
+            setAdmins(formattedUsers);
+            setFilteredAdmins(formattedUsers);
+          }
+        }
       } else {
         const response = await fetchJSON(
           "http://13.61.152.64:4000/api/portal/auth/create-portal-user",
@@ -200,6 +267,7 @@ export default function User() {
             password: currentAdmin.password,
             role: currentAdmin.role.toLowerCase(),
             department: currentAdmin.department,
+            permissions: currentAdmin.permissions,
           }
         );
         
@@ -221,6 +289,7 @@ export default function User() {
               department: user.department,
               profileImage: user.profileImage,
               role: user.role === 'super admin' ? 'Super admin' : user.role === 'health provider' ? 'Health Provider' : 'Admin',
+              permissions: user.permissions || { read: true, write: false, delete: false },
               createdAt: user.createdAt || new Date().toISOString(),
             }));
             setAdmins(formattedUsers);
@@ -237,11 +306,63 @@ export default function User() {
     }
   };
 
-  const handleDelete = (id) => {
-    setAdmins((prev) => prev.filter((admin) => admin.id !== id));
-    setSnackbarMessage('Administrator deleted successfully!');
-    setSnackbarSeverity('success');
-    setSnackbarOpen(true);
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this administrator? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetchJSON(
+          `http://13.61.152.64:4000/api/portal/auth/delete-user/${id}`,
+          "DELETE"
+        );
+        if (response.message || response.status === true) {
+          // Refresh users list
+          const usersResponse = await fetchJSON(
+            "http://13.61.152.64:4000/api/portal/auth/all-users",
+            "GET"
+          );
+          if (usersResponse.status === true && usersResponse.users) {
+            const formattedUsers = usersResponse.users.map((user) => ({
+              id: user._id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              contactNumber: user.cellphoneNumber,
+              email: user.email,
+              department: user.department,
+              profileImage: user.profileImage,
+              role: user.role === 'super admin' ? 'Super admin' : user.role === 'health provider' ? 'Health Provider' : 'Admin',
+              permissions: user.permissions || { read: true, write: false, delete: false },
+              createdAt: user.createdAt || new Date().toISOString(),
+            }));
+            setAdmins(formattedUsers);
+            setFilteredAdmins(formattedUsers);
+          }
+          setSnackbarMessage(response.message || 'Administrator deleted successfully!');
+          setSnackbarSeverity('success');
+          setSnackbarOpen(true);
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'The administrator has been deleted.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      } catch (error) {
+        setSnackbarMessage(error.message || 'Failed to delete administrator.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    }
   };
 
   const handleCloseSnackbar = (event, reason) => {
@@ -308,6 +429,30 @@ export default function User() {
       ),
     },
     {
+      field: 'permissions',
+      headerName: 'Permissions',
+      width: 200,
+      renderCell: (params) => {
+        const perms = params.value || { read: true, write: false, delete: false };
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            {perms.read && (
+              <Chip label="Read" size="small" color="primary" variant="outlined" />
+            )}
+            {perms.write && (
+              <Chip label="Write" size="small" color="success" variant="outlined" />
+            )}
+            {perms.delete && (
+              <Chip label="Delete" size="small" color="error" variant="outlined" />
+            )}
+            {!perms.read && !perms.write && !perms.delete && (
+              <Typography variant="body2" color="text.secondary">No permissions</Typography>
+            )}
+          </Box>
+        );
+      },
+    },
+    {
       field: 'createdAt',
       headerName: 'Added On',
       width: 150,
@@ -324,28 +469,32 @@ export default function User() {
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenDialog(params.row);
-            }}
-            title="Edit"
-            color="primary"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(params.row.id);
-            }}
-            title="Delete"
-            color="error"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {canWrite && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDialog(params.row);
+              }}
+              title="Edit"
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(params.row.id);
+              }}
+              title="Delete"
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -433,13 +582,15 @@ export default function User() {
                 <Typography variant="h5">
                   All Administrators
                 </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<PersonAddIcon />}
-                  onClick={() => handleOpenDialog()}
-                >
-                  Add New Admin
-                </Button>
+                {canWrite && (
+                  <Button
+                    variant="contained"
+                    startIcon={<PersonAddIcon />}
+                    onClick={() => handleOpenDialog()}
+                  >
+                    Add New Admin
+                  </Button>
+                )}
               </Stack>
 
               {/* Search and Filters */}
@@ -597,6 +748,42 @@ export default function User() {
               disabled={isEdit}
               helperText={isEdit ? "Password cannot be changed here." : ""}
             />
+            <Divider sx={{ my: 1 }} />
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Permissions
+            </Typography>
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="permission.read"
+                    checked={currentAdmin.permissions?.read !== false}
+                    onChange={handleChange}
+                  />
+                }
+                label="Read Access"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="permission.write"
+                    checked={currentAdmin.permissions?.write === true}
+                    onChange={handleChange}
+                  />
+                }
+                label="Write Access"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="permission.delete"
+                    checked={currentAdmin.permissions?.delete === true}
+                    onChange={handleChange}
+                  />
+                }
+                label="Delete Access"
+              />
+            </FormGroup>
           </Stack>
         </DialogContent>
         <DialogActions>

@@ -28,6 +28,8 @@ import MenuItem from '@mui/material/MenuItem';
 import { useSelector } from 'react-redux';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import { usePermissions } from '../utils/usePermissions';
+import Swal from 'sweetalert2';
 
 // Create a custom MUI theme for a cohesive look, consistent with the Profile page.
 const theme = createTheme({
@@ -55,6 +57,7 @@ function Notifications() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const { canRead, canWrite, canDelete } = usePermissions();
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,17 +208,19 @@ function Notifications() {
           >
             <MarkEmailReadIcon fontSize="small" />
           </IconButton>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(params.row.id);
-            }}
-            title="Delete"
-            color="error"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
+          {canDelete && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(params.row.id);
+              }}
+              title="Delete"
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
         </Box>
       )
     }
@@ -295,7 +300,18 @@ function Notifications() {
   };
 
   const handleDeleteAll = async () => {
-    if (window.confirm('Are you sure you want to delete all notifications?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete all notifications? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete all!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
       try {
         const deletePromises = notifications.map(notification =>
           fetchJSON(
@@ -307,6 +323,13 @@ function Notifications() {
         setNotifications([]);
         setMessage('All notifications deleted');
         setOpen(true);
+        Swal.fire({
+          title: 'Deleted!',
+          text: 'All notifications have been deleted.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
       } catch (error) {
         console.error("Error deleting all notifications:", error);
         toast.error("Failed to delete all notifications. Please try again.");
@@ -390,15 +413,17 @@ function Notifications() {
                   >
                     Mark All Read
                   </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={handleDeleteAll}
-                    disabled={notifications.length === 0}
-                  >
-                    Delete All
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={handleDeleteAll}
+                      disabled={notifications.length === 0}
+                    >
+                      Delete All
+                    </Button>
+                  )}
                 </Stack>
               </Stack>
 

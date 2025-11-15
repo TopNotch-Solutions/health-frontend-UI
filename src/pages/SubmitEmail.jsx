@@ -4,14 +4,12 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { fetchOAuthToken } from "../utils/fectchOAuthToken";
 
 function SubmitEmail() {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const serverToken = useSelector((state) => state.server.serverToken);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,15 +17,12 @@ function SubmitEmail() {
     setEmailError("");
 
     if (validateForm()) {
-      const tokenData = await fetchOAuthToken();
-      if (tokenData.access_token) {
-        try {
+      try {
           setIsSubmitting(true);
           const response = await fetch("https://dt.mtc.com.na:4000/auth/admin/forgot-password", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${tokenData.access_token}`,
             },
             body: JSON.stringify({
               email
@@ -52,7 +47,6 @@ function SubmitEmail() {
             "Please check your network connection and try again"
           );
         }
-      }
       
     }
   };
