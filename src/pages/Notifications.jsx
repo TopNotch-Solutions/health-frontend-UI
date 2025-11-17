@@ -25,6 +25,11 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import RadioGroup from '@mui/material/RadioGroup';
+import Radio from '@mui/material/Radio';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormLabel from '@mui/material/FormLabel';
+import SendIcon from '@mui/icons-material/Send';
 import { useSelector } from 'react-redux';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
@@ -63,6 +68,15 @@ function Notifications() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRead, setFilterRead] = useState('all');
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [appUsers, setAppUsers] = useState([]);
+  const [notificationForm, setNotificationForm] = useState({
+    recipientType: 'all', // 'all' or 'single'
+    userId: '',
+    title: '',
+    message: '',
+    type: 'alert',
+  });
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -92,6 +106,27 @@ function Notifications() {
   
     fetchNotifications();
   }, [currentUser]);
+
+  // Fetch app users when send dialog opens
+  useEffect(() => {
+    const fetchAppUsers = async () => {
+      if (sendDialogOpen && notificationForm.recipientType === 'single') {
+        try {
+          const response = await fetchJSON(
+            'http://13.61.152.64:4000/api/app/auth/all-users',
+            'GET'
+          );
+          if (response.status === true && response.users) {
+            setAppUsers(response.users);
+          }
+        } catch (error) {
+          console.error("Error fetching app users:", error);
+          toast.error("Failed to load users. Please try again.");
+        }
+      }
+    };
+    fetchAppUsers();
+  }, [sendDialogOpen, notificationForm.recipientType]);
   // Update filteredNotifications whenever notifications, searchQuery, or filters change
   useEffect(() => {
     let filtered = notifications;
@@ -344,6 +379,76 @@ function Notifications() {
     setOpen(false);
   };
 
+  const handleOpenSendDialog = () => {
+    setNotificationForm({
+      recipientType: 'all',
+      userId: '',
+      title: '',
+      message: '',
+      type: 'alert',
+    });
+    setSendDialogOpen(true);
+  };
+
+  const handleCloseSendDialog = () => {
+    setSendDialogOpen(false);
+    setNotificationForm({
+      recipientType: 'all',
+      userId: '',
+      title: '',
+      message: '',
+      type: 'alert',
+    });
+  };
+
+  const handleSendNotification = async () => {
+    if (!notificationForm.title || !notificationForm.message) {
+      toast.error('Please fill in both title and message.');
+      return;
+    }
+
+    if (notificationForm.recipientType === 'single' && !notificationForm.userId) {
+      toast.error('Please select a user.');
+      return;
+    }
+
+    try {
+      let response;
+      if (notificationForm.recipientType === 'all') {
+        response = await fetchJSON(
+          'http://13.61.152.64:4000/api/portal/notification/send-to-all-users',
+          'POST',
+          {
+            title: notificationForm.title,
+            message: notificationForm.message,
+            type: notificationForm.type,
+          }
+        );
+      } else {
+        response = await fetchJSON(
+          'http://13.61.152.64:4000/api/portal/notification/send-to-user',
+          'POST',
+          {
+            userId: notificationForm.userId,
+            title: notificationForm.title,
+            message: notificationForm.message,
+            type: notificationForm.type,
+          }
+        );
+      }
+
+      if (response.status === true) {
+        toast.success(response.message || 'Notification sent successfully!');
+        handleCloseSendDialog();
+        setMessage(response.message || 'Notification sent successfully!');
+        setOpen(true);
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      toast.error(error.message || 'Failed to send notification. Please try again.');
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <Grid container spacing={4} sx={{ p: { xs: 2, md: 4 } }}>
@@ -405,6 +510,15 @@ function Notifications() {
                   All Notifications
                 </Typography>
                 <Stack direction="row" spacing={2}>
+                  {canWrite && (
+                    <Button
+                      variant="contained"
+                      startIcon={<SendIcon />}
+                      onClick={handleOpenSendDialog}
+                    >
+                      Send Notification
+                    </Button>
+                  )}
                   <Button
                     variant="outlined"
                     startIcon={<MarkEmailReadIcon />}
@@ -584,6 +698,89 @@ function Notifications() {
               Mark as Read
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Send Notification Dialog */}
+      <Dialog open={sendDialogOpen} onClose={handleCloseSendDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Send Notification</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <FormControl component="fieldset">
+              <FormLabel component="legend">Recipient</FormLabel>
+              <RadioGroup
+                value={notificationForm.recipientType}
+                onChange={(e) => setNotificationForm({ ...notificationForm, recipientType: e.target.value, userId: '' })}
+              >
+                <FormControlLabel value="all" control={<Radio />} label="All Users" />
+                <FormControlLabel value="single" control={<Radio />} label="Single User" />
+              </RadioGroup>
+            </FormControl>
+
+            {notificationForm.recipientType === 'single' && (
+              <FormControl fullWidth required>
+                <InputLabel>Select User</InputLabel>
+                <Select
+                  value={notificationForm.userId}
+                  label="Select User"
+                  onChange={(e) => setNotificationForm({ ...notificationForm, userId: e.target.value })}
+                >
+                  {appUsers.map((user) => (
+                    <MenuItem key={user._id} value={user._id}>
+                      {user.fullname || user.email || user.walletID} ({user.role || 'N/A'})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
+            <FormControl fullWidth>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={notificationForm.type}
+                label="Type"
+                onChange={(e) => setNotificationForm({ ...notificationForm, type: e.target.value })}
+              >
+                <MenuItem value="alert">Alert</MenuItem>
+                <MenuItem value="reminder">Reminder</MenuItem>
+                <MenuItem value="promotion">Promotion</MenuItem>
+                <MenuItem value="welcome">Welcome</MenuItem>
+                <MenuItem value="app_update">App Update</MenuItem>
+                <MenuItem value="maintenance_scheduled">Maintenance Scheduled</MenuItem>
+                <MenuItem value="emergency_alert">Emergency Alert</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Title"
+              variant="outlined"
+              fullWidth
+              required
+              value={notificationForm.title}
+              onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+              inputProps={{ maxLength: 100 }}
+              helperText={`${notificationForm.title.length}/100 characters`}
+            />
+
+            <TextField
+              label="Message"
+              variant="outlined"
+              fullWidth
+              required
+              multiline
+              rows={4}
+              value={notificationForm.message}
+              onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+              inputProps={{ maxLength: 500 }}
+              helperText={`${notificationForm.message.length}/500 characters`}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSendDialog}>Cancel</Button>
+          <Button variant="contained" onClick={handleSendNotification} startIcon={<SendIcon />}>
+            Send
+          </Button>
         </DialogActions>
       </Dialog>
 

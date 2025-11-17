@@ -17,10 +17,9 @@ import {
   Alert,
   CircularProgress,
   FormControl,
-  FormLabel,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
@@ -45,7 +44,7 @@ export default function Specialization() {
     id: null,
     title: '',
     description: '',
-    role: [],
+    role: '',
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -63,9 +62,7 @@ export default function Specialization() {
         (spec) =>
           spec.title?.toLowerCase().includes(lowercasedQuery) ||
           spec.description?.toLowerCase().includes(lowercasedQuery) ||
-          (Array.isArray(spec.role) 
-            ? spec.role.some(r => r?.toLowerCase().includes(lowercasedQuery))
-            : spec.role?.toLowerCase().includes(lowercasedQuery))
+          spec.role?.toLowerCase().includes(lowercasedQuery)
       );
     }
     setFilteredSpecializations(filtered);
@@ -83,7 +80,7 @@ export default function Specialization() {
           id: spec._id,
           title: spec.title,
           description: spec.description,
-          role: Array.isArray(spec.role) ? spec.role : [spec.role].filter(Boolean),
+          role: spec.role || '',
         }));
         setSpecializations(formatted);
         setFilteredSpecializations(formatted);
@@ -101,11 +98,11 @@ export default function Specialization() {
       setIsEdit(true);
       setCurrentSpecialization({
         ...spec,
-        role: Array.isArray(spec.role) ? spec.role : [spec.role].filter(Boolean),
+        role: spec.role || '',
       });
     } else {
       setIsEdit(false);
-      setCurrentSpecialization({ id: null, title: '', description: '', role: [] });
+      setCurrentSpecialization({ id: null, title: '', description: '', role: '' });
     }
     setDialogOpen(true);
   };
@@ -115,22 +112,14 @@ export default function Specialization() {
   };
 
   const handleSubmit = async () => {
-    const roleArray = Array.isArray(currentSpecialization.role) 
-      ? currentSpecialization.role 
-      : [currentSpecialization.role].filter(Boolean);
-    
-    if (!currentSpecialization.title || !currentSpecialization.description || roleArray.length === 0) {
-      setSnackbarMessage('Please fill out all required fields and select at least one category.');
+    if (!currentSpecialization.title || !currentSpecialization.description || !currentSpecialization.role) {
+      setSnackbarMessage('Please fill out all required fields and select a category.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
     }
 
     try {
-      const roleArray = Array.isArray(currentSpecialization.role) 
-        ? currentSpecialization.role 
-        : [currentSpecialization.role].filter(Boolean);
-      
       if (isEdit) {
         const response = await fetchJSON(
           `http://13.61.152.64:4000/api/portal/specialization/update-specialization/${currentSpecialization.id}`,
@@ -138,7 +127,7 @@ export default function Specialization() {
           {
             title: currentSpecialization.title,
             description: currentSpecialization.description,
-            role: roleArray,
+            role: currentSpecialization.role,
           }
         );
         if (response.message) {
@@ -153,7 +142,7 @@ export default function Specialization() {
           {
             title: currentSpecialization.title,
             description: currentSpecialization.description,
-            role: roleArray,
+            role: currentSpecialization.role,
           }
         );
         if (response.message) {
@@ -208,8 +197,8 @@ export default function Specialization() {
     { field: 'description', headerName: 'Description', width: 300 },
     { 
       field: 'role', 
-      headerName: 'Categories', 
-      width: 250,
+      headerName: 'Category', 
+      width: 200,
       renderCell: (params) => {
         const roleMap = {
           'doctor': 'Doctor',
@@ -217,26 +206,21 @@ export default function Specialization() {
           'physiotherapist': 'Physiotherapist',
           'social worker': 'Social Worker'
         };
-        const roles = Array.isArray(params.value) ? params.value : [params.value].filter(Boolean);
         return (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {roles.map((role, index) => (
-              <Typography
-                key={index}
-                variant="body2"
-                sx={{
-                  backgroundColor: 'primary.light',
-                  color: 'primary.contrastText',
-                  px: 1,
-                  py: 0.25,
-                  borderRadius: 1,
-                  fontSize: '0.75rem',
-                }}
-              >
-                {roleMap[role] || role}
-              </Typography>
-            ))}
-          </Box>
+          <Typography
+            variant="body2"
+            sx={{
+              backgroundColor: 'primary.light',
+              color: 'primary.contrastText',
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              fontSize: '0.75rem',
+              display: 'inline-block',
+            }}
+          >
+            {roleMap[params.value] || params.value}
+          </Typography>
         );
       }
     },
@@ -379,78 +363,18 @@ export default function Specialization() {
               onChange={(e) => setCurrentSpecialization({ ...currentSpecialization, description: e.target.value })}
               required
             />
-            <FormControl fullWidth required component="fieldset">
-              <FormLabel component="legend">Categories (Health Provider Roles)</FormLabel>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('doctor')}
-                      onChange={(e) => {
-                        const currentRoles = Array.isArray(currentSpecialization.role) 
-                          ? currentSpecialization.role 
-                          : [];
-                        const newRoles = e.target.checked
-                          ? [...currentRoles, 'doctor']
-                          : currentRoles.filter(role => role !== 'doctor');
-                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
-                      }}
-                    />
-                  }
-                  label="Doctor"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('nurse')}
-                      onChange={(e) => {
-                        const currentRoles = Array.isArray(currentSpecialization.role) 
-                          ? currentSpecialization.role 
-                          : [];
-                        const newRoles = e.target.checked
-                          ? [...currentRoles, 'nurse']
-                          : currentRoles.filter(role => role !== 'nurse');
-                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
-                      }}
-                    />
-                  }
-                  label="Nurse"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('physiotherapist')}
-                      onChange={(e) => {
-                        const currentRoles = Array.isArray(currentSpecialization.role) 
-                          ? currentSpecialization.role 
-                          : [];
-                        const newRoles = e.target.checked
-                          ? [...currentRoles, 'physiotherapist']
-                          : currentRoles.filter(role => role !== 'physiotherapist');
-                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
-                      }}
-                    />
-                  }
-                  label="Physiotherapist"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={Array.isArray(currentSpecialization.role) && currentSpecialization.role.includes('social worker')}
-                      onChange={(e) => {
-                        const currentRoles = Array.isArray(currentSpecialization.role) 
-                          ? currentSpecialization.role 
-                          : [];
-                        const newRoles = e.target.checked
-                          ? [...currentRoles, 'social worker']
-                          : currentRoles.filter(role => role !== 'social worker');
-                        setCurrentSpecialization({ ...currentSpecialization, role: newRoles });
-                      }}
-                    />
-                  }
-                  label="Social Worker"
-                />
-              </FormGroup>
+            <FormControl fullWidth required>
+              <InputLabel>Category (Health Provider Role)</InputLabel>
+              <Select
+                value={currentSpecialization.role}
+                label="Category (Health Provider Role)"
+                onChange={(e) => setCurrentSpecialization({ ...currentSpecialization, role: e.target.value })}
+              >
+                <MenuItem value="doctor">Doctor</MenuItem>
+                <MenuItem value="nurse">Nurse</MenuItem>
+                <MenuItem value="physiotherapist">Physiotherapist</MenuItem>
+                <MenuItem value="social worker">Social Worker</MenuItem>
+              </Select>
             </FormControl>
           </Stack>
         </DialogContent>

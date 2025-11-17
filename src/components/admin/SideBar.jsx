@@ -13,6 +13,7 @@ import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import HealingIcon from "@mui/icons-material/Healing";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import HelpIcon from "@mui/icons-material/Help";
+import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import Tooltip from "@mui/material/Tooltip";
 import { NavLink } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -21,16 +22,17 @@ import "../../assets/css/Sidebar.css";
 
 const menuItems = [
   { id: 1, title: "Dashboard", icon: DashboardIcon, path: "/Dashboard" },
-  { id: 2, title: "Registration", icon: AddBusinessIcon, path: "/Msme" },
-  { id: 3, title: "Specializations", icon: LocalHospitalIcon, path: "/Specialization" },
-  { id: 4, title: "Ailments", icon: HealingIcon, path: "/Aliment" },
-  { id: 5, title: "Administrators", icon: PeopleAltIcon, path: "/Users" },
-  { id: 6, title: "Transactions", icon: AccountBalanceWalletIcon, path: "/Bso" },
-  { id: 7, title: "Issues", icon: AssignmentIcon, path: "/Content" },
-  { id: 8, title: "FAQs", icon: HelpIcon, path: "/FAQ" },
-  { id: 9, title: "Notifications", icon: NotificationsIcon, path: "/Notifications" },
-  { id: 10, title: "Reporting", icon: PictureAsPdfIcon, path: "/Reporting" },
-   { id: 11, title: "Profile", icon: AccountCircleIcon, path: "/Profile" },
+  { id: 2, title: "Registration", icon: AddBusinessIcon, path: "/registration" },
+  { id: 3, title: "Request", icon: RequestQuoteIcon, path: "/Request" },
+  { id: 4, title: "Specializations", icon: LocalHospitalIcon, path: "/specializations" },
+  { id: 5, title: "Ailments", icon: HealingIcon, path: "/ailments" },
+  { id: 6, title: "Administrators", icon: PeopleAltIcon, path: "/administrators" },
+  { id: 7, title: "Transactions", icon: AccountBalanceWalletIcon, path: "/transactions" },
+  { id: 8, title: "Issues", icon: AssignmentIcon, path: "/issues" },
+  { id: 9, title: "FAQs", icon: HelpIcon, path: "/FAQ" },
+  { id: 10, title: "Notifications", icon: NotificationsIcon, path: "/Notifications" },
+  { id: 11, title: "Reporting", icon: PictureAsPdfIcon, path: "/Reporting" },
+   { id: 12, title: "Profile", icon: AccountCircleIcon, path: "/Profile" },
 ];
 
 const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {

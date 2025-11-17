@@ -110,9 +110,7 @@ function ForgotPassword() {
     <div className="login-container">
       <div className="login-wrapper-centered">
         <div className="login-form-section">
-          <div className="login-form-wrapper">
-            <h1 className="login-title">IN4MSME Portal</h1>
-            
+          <div className="login-form-wrapper">            
             <div className="login-card">
               {success ? (
                 <div className="auth-form text-center">

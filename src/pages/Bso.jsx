@@ -210,7 +210,7 @@ export default function Bso() {
       type: 'number',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          ${(params.value || 0).toFixed(2)}
+          N${(params.value || 0).toFixed(2)}
         </Typography>
       ),
     },

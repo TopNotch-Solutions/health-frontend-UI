@@ -17,9 +17,10 @@ import {
   Alert,
   CircularProgress,
   FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  FormLabel,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
@@ -46,7 +47,7 @@ export default function Ailment() {
     title: '',
     description: '',
     cost: '',
-    specialization: '',
+    specialization: [],
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -83,8 +84,12 @@ export default function Ailment() {
           title: ailment.title,
           description: ailment.description,
           cost: ailment.cost,
-          specialization: ailment.specialization?.title || ailment.specialization || 'N/A',
-          specializationId: typeof ailment.specialization === 'object' ? ailment.specialization._id : ailment.specialization,
+          specialization: Array.isArray(ailment.specialization) 
+            ? ailment.specialization.map(spec => spec?.title || spec || 'N/A').join(', ')
+            : (ailment.specialization?.title || ailment.specialization || 'N/A'),
+          specializationIds: Array.isArray(ailment.specialization)
+            ? ailment.specialization.map(spec => typeof spec === 'object' ? spec._id : spec)
+            : [typeof ailment.specialization === 'object' ? ailment.specialization._id : ailment.specialization].filter(Boolean),
         }));
         setAilments(formatted);
         setFilteredAilments(formatted);
@@ -119,11 +124,11 @@ export default function Ailment() {
         title: ailment.title,
         description: ailment.description,
         cost: ailment.cost,
-        specialization: ailment.specializationId || '',
+        specialization: Array.isArray(ailment.specializationIds) ? ailment.specializationIds : [],
       });
     } else {
       setIsEdit(false);
-      setCurrentAilment({ id: null, title: '', description: '', cost: '', specialization: '' });
+      setCurrentAilment({ id: null, title: '', description: '', cost: '', specialization: [] });
     }
     setDialogOpen(true);
   };
@@ -133,8 +138,8 @@ export default function Ailment() {
   };
 
   const handleSubmit = async () => {
-    if (!currentAilment.title || !currentAilment.description || !currentAilment.cost || !currentAilment.specialization) {
-      setSnackbarMessage('Please fill out all required fields.');
+    if (!currentAilment.title || !currentAilment.description || !currentAilment.cost || !currentAilment.specialization || currentAilment.specialization.length === 0) {
+      setSnackbarMessage('Please fill out all required fields and select at least one specialization.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
@@ -219,7 +224,7 @@ export default function Ailment() {
     { field: 'title', headerName: 'Title', width: 200 },
     { field: 'description', headerName: 'Description', width: 300 },
     { field: 'cost', headerName: 'Cost', width: 120 },
-    { field: 'specialization', headerName: 'Specialization', width: 200 },
+    { field: 'specialization', headerName: 'Specializations', width: 250 },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -368,20 +373,43 @@ export default function Ailment() {
               onChange={(e) => setCurrentAilment({ ...currentAilment, cost: e.target.value })}
               required
             />
-            <FormControl fullWidth>
-              <InputLabel>Specialization</InputLabel>
-              <Select
-                value={currentAilment.specialization}
-                label="Specialization"
-                onChange={(e) => setCurrentAilment({ ...currentAilment, specialization: e.target.value })}
-                required
+            <FormControl fullWidth required component="fieldset">
+              <FormLabel component="legend" sx={{ mb: 1 }}>Specializations</FormLabel>
+              <Box
+                sx={{
+                  maxHeight: 300,
+                  overflowY: 'auto',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  p: 2,
+                }}
               >
-                {specializations.map((spec) => (
-                  <MenuItem key={spec._id} value={spec._id}>
-                    {spec.title}
-                  </MenuItem>
-                ))}
-              </Select>
+                <Grid container spacing={1}>
+                  {specializations.map((spec) => (
+                    <Grid item xs={12} sm={6} md={4} key={spec._id}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={Array.isArray(currentAilment.specialization) && currentAilment.specialization.includes(spec._id)}
+                            onChange={(e) => {
+                              const currentSpecs = Array.isArray(currentAilment.specialization) 
+                                ? currentAilment.specialization 
+                                : [];
+                              const newSpecs = e.target.checked
+                                ? [...currentSpecs, spec._id]
+                                : currentSpecs.filter(id => id !== spec._id);
+                              setCurrentAilment({ ...currentAilment, specialization: newSpecs });
+                            }}
+                            size="small"
+                          />
+                        }
+                        label={spec.title}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
             </FormControl>
           </Stack>
         </DialogContent>

@@ -85,7 +85,7 @@ function Reporting() {
   const transactionColumns = [
     { field: '_id', headerName: 'Transaction ID', width: 150 },
     { field: 'userId', headerName: 'User', width: 200, renderCell: (params) => params.value?.fullname || params.value || 'N/A' },
-    { field: 'amount', headerName: 'Amount', width: 120, type: 'number', renderCell: (params) => `$${params.value?.toFixed(2) || '0.00'}` },
+    { field: 'amount', headerName: 'Amount', width: 120, type: 'number', renderCell: (params) => `N$${params.value?.toFixed(2) || '0.00'}` },
     { field: 'walletID', headerName: 'Wallet ID', width: 150 },
     { field: 'time', headerName: 'Time', width: 200, renderCell: (params) => new Date(params.value).toLocaleString() },
     { field: 'referrence', headerName: 'Reference', width: 180 },

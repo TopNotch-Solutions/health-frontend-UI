@@ -366,7 +366,7 @@ export default function Registration() {
     { field: 'fullname', headerName: 'Full Name', width: 130 },
     { field: 'cellphoneNumber', headerName: 'Phone', width: 120 },
     { field: 'walletID', headerName: 'Wallet ID', width: 100 },
-    { field: 'balance', headerName: 'Balance', width: 100, renderCell: (params) => `$${params.value.toFixed(2)}` },
+    { field: 'balance', headerName: 'Balance', width: 100, renderCell: (params) => `N$${params.value.toFixed(2)}` },
     {
       field: 'role',
       headerName: 'Role',

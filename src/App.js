@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import Specialization from "./pages/Specialization";
 import FAQ from "./pages/FAQ";
 import Ailment from "./pages/Ailment";
+import Request from "./pages/Request";
 import { useSelector } from "react-redux";
 import AdminRoute from "./AdminRoute";
 import SubmitEmail from "./pages/SubmitEmail";
@@ -60,12 +61,13 @@ function App() {
                   <Route path="/" element={<AdminLogin />} />
                   <Route element={<AdminRoute />}>
                     <Route path="/Dashboard" element={<Dashboard />} />
-                    <Route path="/Bso" element={<Bso />} />
-                    <Route path="/Users" element={<User />} />
-                    <Route path="/Content" element={<Content />} />
-                    <Route path="/Msme" element={<Msme />} />
-                    <Route path="/Specialization" element={<Specialization />} />
-                    <Route path="/Aliment" element={<Ailment />} />
+                    <Route path="/transactions" element={<Bso />} />
+                    <Route path="/administrators" element={<User />} />
+                    <Route path="/issues" element={<Content />} />
+                    <Route path="/registration" element={<Msme />} />
+                    <Route path="/Request" element={<Request />} />
+                    <Route path="/specializations" element={<Specialization />} />
+                    <Route path="/ailments" element={<Ailment />} />
                     <Route path="/FAQ" element={<FAQ />} />
                     <Route path="/Notifications" element={<Notifications />} />
                     <Route path="/Profile" element={<Profile />} />
