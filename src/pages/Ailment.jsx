@@ -46,7 +46,7 @@ export default function Ailment() {
     id: null,
     title: '',
     description: '',
-    cost: '',
+    initialCost: '',
     specialization: [],
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -79,18 +79,46 @@ export default function Ailment() {
         "GET"
       );
       if (response.ailments) {
-        const formatted = response.ailments.map((ailment) => ({
-          id: ailment._id,
-          title: ailment.title,
-          description: ailment.description,
-          cost: ailment.cost,
-          specialization: Array.isArray(ailment.specialization) 
-            ? ailment.specialization.map(spec => spec?.title || spec || 'N/A').join(', ')
-            : (ailment.specialization?.title || ailment.specialization || 'N/A'),
-          specializationIds: Array.isArray(ailment.specialization)
-            ? ailment.specialization.map(spec => typeof spec === 'object' ? spec._id : spec)
-            : [typeof ailment.specialization === 'object' ? ailment.specialization._id : ailment.specialization].filter(Boolean),
-        }));
+        console.log('Raw API response:', response.ailments); // Debug: see what API returns
+        const formatted = response.ailments.map((ailment) => {
+          // Directly use values from API, convert to number if needed
+          const initialCost = typeof ailment.initialCost === 'number' 
+            ? ailment.initialCost 
+            : (ailment.initialCost !== undefined && ailment.initialCost !== null ? parseFloat(ailment.initialCost) : 0);
+          
+          const cost = typeof ailment.cost === 'number' 
+            ? ailment.cost 
+            : (ailment.cost !== undefined && ailment.cost !== null ? parseFloat(ailment.cost) : 0);
+          
+          const commission = typeof ailment.commission === 'number' 
+            ? ailment.commission 
+            : (ailment.commission !== undefined && ailment.commission !== null ? parseFloat(ailment.commission) : 0);
+          
+          console.log('Processing ailment:', {
+            _id: ailment._id,
+            title: ailment.title,
+            initialCost: ailment.initialCost,
+            cost: ailment.cost,
+            commission: ailment.commission,
+            parsed: { initialCost, cost, commission }
+          });
+          
+          return {
+            id: ailment._id,
+            title: ailment.title || '',
+            description: ailment.description || '',
+            initialCost: initialCost,
+            cost: cost,
+            commission: commission,
+            specialization: Array.isArray(ailment.specialization) 
+              ? ailment.specialization.map(spec => spec?.title || spec || 'N/A').join(', ')
+              : (ailment.specialization?.title || ailment.specialization || 'N/A'),
+            specializationIds: Array.isArray(ailment.specialization)
+              ? ailment.specialization.map(spec => typeof spec === 'object' ? spec._id : spec)
+              : [typeof ailment.specialization === 'object' ? ailment.specialization._id : ailment.specialization].filter(Boolean),
+          };
+        });
+        console.log('Formatted ailments:', formatted); // Debug log
         setAilments(formatted);
         setFilteredAilments(formatted);
       }
@@ -123,12 +151,12 @@ export default function Ailment() {
         id: ailment.id,
         title: ailment.title,
         description: ailment.description,
-        cost: ailment.cost,
+        initialCost: ailment.initialCost || '',
         specialization: Array.isArray(ailment.specializationIds) ? ailment.specializationIds : [],
       });
     } else {
       setIsEdit(false);
-      setCurrentAilment({ id: null, title: '', description: '', cost: '', specialization: [] });
+      setCurrentAilment({ id: null, title: '', description: '', initialCost: '', specialization: [] });
     }
     setDialogOpen(true);
   };
@@ -138,7 +166,7 @@ export default function Ailment() {
   };
 
   const handleSubmit = async () => {
-    if (!currentAilment.title || !currentAilment.description || !currentAilment.cost || !currentAilment.specialization || currentAilment.specialization.length === 0) {
+    if (!currentAilment.title || !currentAilment.description || !currentAilment.initialCost || !currentAilment.specialization || currentAilment.specialization.length === 0) {
       setSnackbarMessage('Please fill out all required fields and select at least one specialization.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
@@ -153,7 +181,7 @@ export default function Ailment() {
           {
             title: currentAilment.title,
             description: currentAilment.description,
-            cost: currentAilment.cost,
+            initialCost: parseFloat(currentAilment.initialCost),
             specialization: currentAilment.specialization,
           }
         );
@@ -169,7 +197,7 @@ export default function Ailment() {
           {
             title: currentAilment.title,
             description: currentAilment.description,
-            cost: currentAilment.cost,
+            initialCost: parseFloat(currentAilment.initialCost),
             specialization: currentAilment.specialization,
           }
         );
@@ -223,7 +251,38 @@ export default function Ailment() {
   const columns = [
     { field: 'title', headerName: 'Title', width: 200 },
     { field: 'description', headerName: 'Description', width: 300 },
-    { field: 'cost', headerName: 'Cost', width: 120 },
+    { 
+      field: 'initialCost', 
+      headerName: 'Initial Cost', 
+      width: 120,
+      renderCell: (params) => {
+        const value = params.value;
+        if (value === undefined || value === null || value === '') {
+          return 'N$0.00';
+        }
+        const numValue = typeof value === 'number' ? value : parseFloat(value);
+        if (isNaN(numValue)) {
+          return 'N$0.00';
+        }
+        return `N$${numValue.toFixed(2)}`;
+      }
+    },
+    { 
+      field: 'cost', 
+      headerName: 'Cost (After Commission)', 
+      width: 150,
+      renderCell: (params) => {
+        const value = params.value;
+        if (value === undefined || value === null || value === '') {
+          return 'N$0.00';
+        }
+        const numValue = typeof value === 'number' ? value : parseFloat(value);
+        if (isNaN(numValue)) {
+          return 'N$0.00';
+        }
+        return `N$${numValue.toFixed(2)}`;
+      }
+    },
     { field: 'specialization', headerName: 'Specializations', width: 250 },
     {
       field: 'actions',
@@ -365,14 +424,37 @@ export default function Ailment() {
               required
             />
             <TextField
-              label="Cost"
+              label="Initial Cost"
               variant="outlined"
               fullWidth
               type="number"
-              value={currentAilment.cost}
-              onChange={(e) => setCurrentAilment({ ...currentAilment, cost: e.target.value })}
+              value={currentAilment.initialCost}
+              onChange={(e) => setCurrentAilment({ ...currentAilment, initialCost: e.target.value })}
               required
+              inputProps={{ step: "0.01", min: "0" }}
             />
+            {currentAilment.initialCost && !isNaN(parseFloat(currentAilment.initialCost)) && (
+              <>
+                <TextField
+                  label="Commission (15%)"
+                  variant="outlined"
+                  fullWidth
+                  type="number"
+                  value={(parseFloat(currentAilment.initialCost) * 0.15).toFixed(2)}
+                  InputProps={{ readOnly: true }}
+                  disabled
+                />
+                <TextField
+                  label="Cost (After Commission)"
+                  variant="outlined"
+                  fullWidth
+                  type="number"
+                  value={(parseFloat(currentAilment.initialCost) * 0.85).toFixed(2)}
+                  InputProps={{ readOnly: true }}
+                  disabled
+                />
+              </>
+            )}
             <FormControl fullWidth required component="fieldset">
               <FormLabel component="legend" sx={{ mb: 1 }}>Specializations</FormLabel>
               <Box
