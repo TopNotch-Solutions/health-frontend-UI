@@ -29,6 +29,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import HealingIcon from '@mui/icons-material/Healing';
 import fetchJSON from '../utils/fetchJSON';
+import { fetchFormData } from '../utils/fetchFormData';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
@@ -48,7 +49,9 @@ export default function Ailment() {
     description: '',
     initialCost: '',
     specialization: [],
+    image: '',
   });
+  const [imageFile, setImageFile] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -94,15 +97,6 @@ export default function Ailment() {
             ? ailment.commission 
             : (ailment.commission !== undefined && ailment.commission !== null ? parseFloat(ailment.commission) : 0);
           
-          console.log('Processing ailment:', {
-            _id: ailment._id,
-            title: ailment.title,
-            initialCost: ailment.initialCost,
-            cost: ailment.cost,
-            commission: ailment.commission,
-            parsed: { initialCost, cost, commission }
-          });
-          
           return {
             id: ailment._id,
             title: ailment.title || '',
@@ -110,6 +104,7 @@ export default function Ailment() {
             initialCost: initialCost,
             cost: cost,
             commission: commission,
+            image: ailment.image || '',
             specialization: Array.isArray(ailment.specialization) 
               ? ailment.specialization.map(spec => spec?.title || spec || 'N/A').join(', ')
               : (ailment.specialization?.title || ailment.specialization || 'N/A'),
@@ -153,10 +148,13 @@ export default function Ailment() {
         description: ailment.description,
         initialCost: ailment.initialCost || '',
         specialization: Array.isArray(ailment.specializationIds) ? ailment.specializationIds : [],
+        image: ailment.image || '',
       });
+      setImageFile(null);
     } else {
       setIsEdit(false);
-      setCurrentAilment({ id: null, title: '', description: '', initialCost: '', specialization: [] });
+      setCurrentAilment({ id: null, title: '', description: '', initialCost: '', specialization: [], image: '' });
+      setImageFile(null);
     }
     setDialogOpen(true);
   };
@@ -166,8 +164,16 @@ export default function Ailment() {
   };
 
   const handleSubmit = async () => {
-    if (!currentAilment.title || !currentAilment.description || !currentAilment.initialCost || !currentAilment.specialization || currentAilment.specialization.length === 0) {
-      setSnackbarMessage('Please fill out all required fields and select at least one specialization.');
+    if (
+      !currentAilment.title ||
+      !currentAilment.description ||
+      !currentAilment.initialCost ||
+      !currentAilment.specialization ||
+      currentAilment.specialization.length === 0
+    ) {
+      setSnackbarMessage(
+        'Please fill out all required fields and select at least one specialization.'
+      );
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
@@ -191,15 +197,24 @@ export default function Ailment() {
           fetchAilments();
         }
       } else {
-        const response = await fetchJSON(
+        if (!imageFile) {
+          setSnackbarMessage('Please upload an image for the ailment.');
+          setSnackbarSeverity('error');
+          setSnackbarOpen(true);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', currentAilment.title);
+        formData.append('description', currentAilment.description);
+        formData.append('initialCost', String(parseFloat(currentAilment.initialCost)));
+        formData.append('specialization', JSON.stringify(currentAilment.specialization));
+        formData.append('image', imageFile);
+
+        const response = await fetchFormData(
           "http://13.61.152.64:4000/api/portal/aligment/create-alignment",
           "POST",
-          {
-            title: currentAilment.title,
-            description: currentAilment.description,
-            initialCost: parseFloat(currentAilment.initialCost),
-            specialization: currentAilment.specialization,
-          }
+          formData
         );
         if (response.message) {
           setSnackbarMessage(response.message);
@@ -209,6 +224,7 @@ export default function Ailment() {
       }
       setSnackbarOpen(true);
       handleCloseDialog();
+      setImageFile(null);
     } catch (error) {
       setSnackbarMessage(error.message || 'An error occurred. Please try again.');
       setSnackbarSeverity('error');
@@ -245,6 +261,42 @@ export default function Ailment() {
         setSnackbarSeverity('error');
         setSnackbarOpen(true);
       }
+    }
+  };
+
+  const handleUpdateImage = async () => {
+    if (!imageFile) {
+      setSnackbarMessage('Please select an image.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    try {
+      const response = await fetchFormData(
+        `http://13.61.152.64:4000/api/portal/aligment/update-ailment-image/${currentAilment.id}`,
+        "PUT",
+        formData
+      );
+
+      if (response.message) {
+        setSnackbarMessage(response.message);
+        setSnackbarSeverity('success');
+      } else {
+        setSnackbarMessage('Ailment image updated successfully.');
+        setSnackbarSeverity('success');
+      }
+
+      setSnackbarOpen(true);
+      setImageFile(null);
+      fetchAilments();
+    } catch (error) {
+      setSnackbarMessage(error.message || 'Failed to update ailment image.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
     }
   };
 
@@ -405,6 +457,25 @@ export default function Ailment() {
         <DialogTitle>{isEdit ? 'Edit Ailment' : 'Add New Ailment'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            {isEdit && currentAilment.image && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Current Image
+                </Typography>
+                <Box
+                  component="img"
+                  src={`http://13.61.152.64:4000/ailments/${currentAilment.image}`}
+                  alt={currentAilment.title}
+                  sx={{
+                    maxWidth: '100%',
+                    maxHeight: 200,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                />
+              </Box>
+            )}
             <TextField
               label="Title"
               variant="outlined"
@@ -454,6 +525,79 @@ export default function Ailment() {
                   disabled
                 />
               </>
+            )}
+            {!isEdit && (
+              <>
+                <Button
+                  variant="outlined"
+                  component="label"
+                >
+                  Choose Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files && e.target.files[0];
+                      if (!file) return;
+                      if (!file.type.startsWith('image/')) {
+                        setSnackbarMessage('Only image files are allowed.');
+                        setSnackbarSeverity('error');
+                        setSnackbarOpen(true);
+                        e.target.value = null;
+                        return;
+                      }
+                      setImageFile(file);
+                    }}
+                  />
+                </Button>
+                {imageFile && (
+                  <Typography variant="body2" color="text.secondary">
+                    Selected image: {imageFile.name}
+                  </Typography>
+                )}
+              </>
+            )}
+            {isEdit && (
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Change Image
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Button variant="outlined" component="label">
+                    Choose New Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files && e.target.files[0];
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                          setSnackbarMessage('Only image files are allowed.');
+                          setSnackbarSeverity('error');
+                          setSnackbarOpen(true);
+                          e.target.value = null;
+                          return;
+                        }
+                        setImageFile(file);
+                      }}
+                    />
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleUpdateImage}
+                    disabled={!imageFile}
+                  >
+                    Update Image
+                  </Button>
+                </Stack>
+                {imageFile && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Selected image: {imageFile.name}
+                  </Typography>
+                )}
+              </Box>
             )}
             <FormControl fullWidth required component="fieldset">
               <FormLabel component="legend" sx={{ mb: 1 }}>Specializations</FormLabel>

@@ -13,6 +13,7 @@ import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import HealingIcon from "@mui/icons-material/Healing";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import HelpIcon from "@mui/icons-material/Help";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import Tooltip from "@mui/material/Tooltip";
 import { NavLink } from "react-router-dom";
@@ -30,9 +31,10 @@ const menuItems = [
   { id: 7, title: "Transactions", icon: AccountBalanceWalletIcon, path: "/transactions" },
   { id: 8, title: "Issues", icon: AssignmentIcon, path: "/issues" },
   { id: 9, title: "FAQs", icon: HelpIcon, path: "/FAQ" },
-  { id: 10, title: "Notifications", icon: NotificationsIcon, path: "/Notifications" },
-  { id: 11, title: "Reporting", icon: PictureAsPdfIcon, path: "/Reporting" },
-   { id: 12, title: "Profile", icon: AccountCircleIcon, path: "/Profile" },
+  { id: 10, title: "Adverts", icon: CampaignIcon, path: "/adverts" },
+  { id: 11, title: "Notifications", icon: NotificationsIcon, path: "/Notifications" },
+  { id: 12, title: "Reporting", icon: PictureAsPdfIcon, path: "/Reporting" },
+  { id: 13, title: "Profile", icon: AccountCircleIcon, path: "/Profile" },
 ];
 
 const Sidebar = ({ openSidebarToggle, OpenSidebar }) => {

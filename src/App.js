@@ -19,6 +19,7 @@ import Specialization from "./pages/Specialization";
 import FAQ from "./pages/FAQ";
 import Ailment from "./pages/Ailment";
 import Request from "./pages/Request";
+import Adverts from "./pages/Adverts";
 import { useSelector } from "react-redux";
 import AdminRoute from "./AdminRoute";
 import SubmitEmail from "./pages/SubmitEmail";
@@ -69,6 +70,7 @@ function App() {
                     <Route path="/specializations" element={<Specialization />} />
                     <Route path="/ailments" element={<Ailment />} />
                     <Route path="/FAQ" element={<FAQ />} />
+                    <Route path="/adverts" element={<Adverts />} />
                     <Route path="/Notifications" element={<Notifications />} />
                     <Route path="/Profile" element={<Profile />} />
                     <Route path="/Reporting" element={<Reporting />} />
