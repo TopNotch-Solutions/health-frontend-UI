@@ -78,7 +78,7 @@ export default function Ailment() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "http://13.61.152.64:4000/api/portal/aligment/all-alignments",
+        "http://13.51.207.99:4000/api/portal/aligment/all-alignments",
         "GET"
       );
       if (response.ailments) {
@@ -128,7 +128,7 @@ export default function Ailment() {
   const fetchSpecializations = async () => {
     try {
       const response = await fetchJSON(
-        "http://13.61.152.64:4000/api/portal/specialization/all-specializations",
+        "http://13.51.207.99:4000/api/portal/specialization/all-specializations",
         "GET"
       );
       if (response.specializations) {
@@ -182,7 +182,7 @@ export default function Ailment() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `http://13.61.152.64:4000/api/portal/aligment/update-alignment/${currentAilment.id}`,
+          `http://13.51.207.99:4000/api/portal/aligment/update-alignment/${currentAilment.id}`,
           "PUT",
           {
             title: currentAilment.title,
@@ -212,7 +212,7 @@ export default function Ailment() {
         formData.append('image', imageFile);
 
         const response = await fetchFormData(
-          "http://13.61.152.64:4000/api/portal/aligment/create-alignment",
+          "http://13.51.207.99:4000/api/portal/aligment/create-alignment",
           "POST",
           formData
         );
@@ -247,7 +247,7 @@ export default function Ailment() {
     if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
-          `http://13.61.152.64:4000/api/portal/aligment/delete-alignment/${id}`,
+          `http://13.51.207.99:4000/api/portal/aligment/delete-alignment/${id}`,
           "DELETE"
         );
         if (response.message) {
@@ -277,7 +277,7 @@ export default function Ailment() {
 
     try {
       const response = await fetchFormData(
-        `http://13.61.152.64:4000/api/portal/aligment/update-ailment-image/${currentAilment.id}`,
+        `http://13.51.207.99:4000/api/portal/aligment/update-ailment-image/${currentAilment.id}`,
         "PUT",
         formData
       );
@@ -464,7 +464,7 @@ export default function Ailment() {
                 </Typography>
                 <Box
                   component="img"
-                  src={`http://13.61.152.64:4000/ailments/${currentAilment.image}`}
+                  src={`http://13.51.207.99:4000/ailments/${currentAilment.image}`}
                   alt={currentAilment.title}
                   sx={{
                     maxWidth: '100%',

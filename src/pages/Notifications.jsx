@@ -86,7 +86,7 @@ function Notifications() {
       }
       try {
         const response = await fetchJSON(
-          `http://13.61.152.64:4000/api/portal/notification/all-notifications/${currentUser._id}`,
+          `http://13.51.207.99:4000/api/portal/notification/all-notifications/${currentUser._id}`,
           'GET'
         );
         if (response.status === true && response.data) {
@@ -113,7 +113,7 @@ function Notifications() {
       if (sendDialogOpen && notificationForm.recipientType === 'single') {
         try {
           const response = await fetchJSON(
-            'http://13.61.152.64:4000/api/app/auth/all-users',
+            'http://13.51.207.99:4000/api/app/auth/all-users',
             'GET'
           );
           if (response.status === true && response.users) {
@@ -271,7 +271,7 @@ function Notifications() {
   const handleMarkAsRead = async (id) => {
     try {
       const response = await fetchJSON(
-        `http://13.61.152.64:4000/api/portal/notification/mark-read/${id}`,
+        `http://13.51.207.99:4000/api/portal/notification/mark-read/${id}`,
         'PUT'
       );
       if (response.status === true) {
@@ -290,7 +290,7 @@ function Notifications() {
   const handleDelete = async (id) => {
     try {
       const response = await fetchJSON(
-        `http://13.61.152.64:4000/api/portal/notification/delete/${id}`,
+        `http://13.51.207.99:4000/api/portal/notification/delete/${id}`,
         'DELETE'
       );
       if (response.status === true) {
@@ -320,7 +320,7 @@ function Notifications() {
       const unreadNotifications = notifications.filter(n => !n.read);
       const updatePromises = unreadNotifications.map(notification =>
         fetchJSON(
-          `http://13.61.152.64:4000/api/portal/notification/mark-read/${notification.id || notification._id}`,
+          `http://13.51.207.99:4000/api/portal/notification/mark-read/${notification.id || notification._id}`,
           'PUT'
         )
       );
@@ -350,7 +350,7 @@ function Notifications() {
       try {
         const deletePromises = notifications.map(notification =>
           fetchJSON(
-            `http://13.61.152.64:4000/api/portal/notification/delete/${notification.id || notification._id}`,
+            `http://13.51.207.99:4000/api/portal/notification/delete/${notification.id || notification._id}`,
             'DELETE'
           )
         );
@@ -416,7 +416,7 @@ function Notifications() {
       let response;
       if (notificationForm.recipientType === 'all') {
         response = await fetchJSON(
-          'http://13.61.152.64:4000/api/portal/notification/send-to-all-users',
+          'http://13.51.207.99:4000/api/portal/notification/send-to-all-users',
           'POST',
           {
             title: notificationForm.title,
@@ -426,7 +426,7 @@ function Notifications() {
         );
       } else {
         response = await fetchJSON(
-          'http://13.61.152.64:4000/api/portal/notification/send-to-user',
+          'http://13.51.207.99:4000/api/portal/notification/send-to-user',
           'POST',
           {
             userId: notificationForm.userId,
