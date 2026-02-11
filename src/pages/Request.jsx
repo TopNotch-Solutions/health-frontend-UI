@@ -82,7 +82,7 @@ export default function Request() {
     fetchRequestStats();
     
     // Initialize socket connection
-    const newSocket = io('http://13.51.207.99:4000', {
+    const newSocket = io('https://apihealthconnect.kopanovertex.com', {
       transports: ['websocket', 'polling'],
     });
 
@@ -123,7 +123,7 @@ export default function Request() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        'http://13.51.207.99:4000/api/portal/request/stats',
+        'https://apihealthconnect.kopanovertex.com/api/portal/request/stats',
         'GET'
       );
 

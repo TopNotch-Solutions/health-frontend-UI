@@ -98,7 +98,7 @@ export default function User() {
       setIsLoading(true);
       try {
         const response = await fetchJSON(
-          "http://13.51.207.99:4000/api/portal/auth/all-users",
+          "https://apihealthconnect.kopanovertex.com/api/portal/auth/all-users",
           "GET"
         );
         if (response.status === true && response.users) {
@@ -218,7 +218,7 @@ export default function User() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `http://13.51.207.99:4000/api/portal/auth/update-user/${currentAdmin.id}`,
+          `https://apihealthconnect.kopanovertex.com/api/portal/auth/update-user/${currentAdmin.id}`,
           "PUT",
           {
             firstName: currentAdmin.firstName,
@@ -235,7 +235,7 @@ export default function User() {
           setSnackbarSeverity('success');
           // Refresh users list
           const usersResponse = await fetchJSON(
-            "http://13.51.207.99:4000/api/portal/auth/all-users",
+            "https://apihealthconnect.kopanovertex.com/api/portal/auth/all-users",
             "GET"
           );
           if (usersResponse.status === true && usersResponse.users) {
@@ -257,7 +257,7 @@ export default function User() {
         }
       } else {
         const response = await fetchJSON(
-          "http://13.51.207.99:4000/api/portal/auth/create-portal-user",
+          "https://apihealthconnect.kopanovertex.com/api/portal/auth/create-portal-user",
           "POST",
           {
             firstName: currentAdmin.firstName,
@@ -276,7 +276,7 @@ export default function User() {
           setSnackbarSeverity('success');
           // Refresh users list
           const usersResponse = await fetchJSON(
-            "http://13.51.207.99:4000/api/portal/auth/all-users",
+            "https://apihealthconnect.kopanovertex.com/api/portal/auth/all-users",
             "GET"
           );
           if (usersResponse.status === true && usersResponse.users) {
@@ -321,13 +321,13 @@ export default function User() {
     if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
-          `http://13.51.207.99:4000/api/portal/auth/delete-user/${id}`,
+          `https://apihealthconnect.kopanovertex.com/api/portal/auth/delete-user/${id}`,
           "DELETE"
         );
         if (response.message || response.status === true) {
           // Refresh users list
           const usersResponse = await fetchJSON(
-            "http://13.51.207.99:4000/api/portal/auth/all-users",
+            "https://apihealthconnect.kopanovertex.com/api/portal/auth/all-users",
             "GET"
           );
           if (usersResponse.status === true && usersResponse.users) {
@@ -391,7 +391,7 @@ export default function User() {
         const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
         const initials = (firstInitial + lastInitial) || (firstInitial || lastInitial) || 'U';
         const profileImageUrl = params.row.profileImage 
-          ? `http://13.51.207.99:4000/images/${params.row.profileImage}` 
+          ? `https://apihealthconnect.kopanovertex.com/images/${params.row.profileImage}` 
           : null;
         
         return (

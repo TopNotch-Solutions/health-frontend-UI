@@ -69,7 +69,7 @@ export default function Bso() {
       setIsLoading(true);
       try {
         const response = await fetchJSON(
-          "http://13.51.207.99:4000/api/app/transaction/all-transactions",
+          "https://apihealthconnect.kopanovertex.com/api/app/transaction/all-transactions",
           "GET"
         );
         if (response.status === true && response.transactions) {

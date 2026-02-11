@@ -79,7 +79,7 @@ function Profile() {
       setContactNumber(currentUser.cellphoneNumber || "");
       setDepartment(currentUser.department || "");
       if (currentUser.profileImage) {
-        setProfilePic(`http://13.51.207.99:4000/images/${currentUser.profileImage}`);
+        setProfilePic(`https://apihealthconnect.kopanovertex.com/images/${currentUser.profileImage}`);
       }
     }
   }, [currentUser]);
@@ -131,14 +131,14 @@ function Profile() {
       formData.append("profileImage", selectedFile);
 
       const response = await fetchFormData(
-        `http://13.51.207.99:4000/api/portal/auth/upload-profile-image/${currentUser._id}`,
+        `https://apihealthconnect.kopanovertex.com/api/portal/auth/upload-profile-image/${currentUser._id}`,
         "PATCH",
         formData
       );
 
       if (response.status === true && response.user) {
         dispatch(updateUser({ user: response.user }));
-        setProfilePic(`http://13.51.207.99:4000/images/${response.user.profileImage}`);
+        setProfilePic(`https://apihealthconnect.kopanovertex.com/images/${response.user.profileImage}`);
         Swal.fire({
           position: "center",
           icon: "success",
@@ -201,7 +201,7 @@ function Profile() {
     setIsSubmitting(true);
     try {
       const response = await fetchJSON(
-        `http://13.51.207.99:4000/api/portal/auth/update-password/${currentUser._id}`,
+        `https://apihealthconnect.kopanovertex.com/api/portal/auth/update-password/${currentUser._id}`,
         "PUT",
         { currentPassword, newPassword, confirmPassword }
       );
@@ -283,7 +283,7 @@ function Profile() {
     setIsSubmitting(true);
     try {
       const response = await fetchJSON(
-        `http://13.51.207.99:4000/api/portal/auth/update-user/${currentUser._id}`,
+        `https://apihealthconnect.kopanovertex.com/api/portal/auth/update-user/${currentUser._id}`,
         "PUT",
         { firstName, lastName, email, cellphoneNumber: contactNumber, department }
       );

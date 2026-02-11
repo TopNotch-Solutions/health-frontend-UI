@@ -47,7 +47,7 @@ function Dashboard() {
       try {
         // Fetch dashboard stats
         const statsResponse = await fetchJSON(
-          "http://13.51.207.99:4000/api/portal/auth/dashboard-stats",
+          "https://apihealthconnect.kopanovertex.com/api/portal/auth/dashboard-stats",
           "GET"
         );
 
@@ -72,7 +72,7 @@ function Dashboard() {
         // Fetch specializations count
         try {
           const specResponse = await fetchJSON(
-            "http://13.51.207.99:4000/api/portal/specialization/all-specializations",
+            "https://apihealthconnect.kopanovertex.com/api/portal/specialization/all-specializations",
             "GET"
           );
           if (specResponse.specializations) {
@@ -85,7 +85,7 @@ function Dashboard() {
         // Fetch ailments count
         try {
           const ailmentResponse = await fetchJSON(
-            "http://13.51.207.99:4000/api/portal/aligment/all-alignments",
+            "https://apihealthconnect.kopanovertex.com/api/portal/aligment/all-alignments",
             "GET"
           );
           if (ailmentResponse.ailments) {
@@ -98,7 +98,7 @@ function Dashboard() {
         // Fetch FAQs count
         try {
           const faqResponse = await fetchJSON(
-            "http://13.51.207.99:4000/api/portal/faq/all-faq",
+            "https://apihealthconnect.kopanovertex.com/api/portal/faq/all-faq",
             "GET"
           );
           if (faqResponse.faqs) {
