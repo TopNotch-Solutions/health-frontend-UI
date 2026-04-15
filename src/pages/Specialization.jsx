@@ -204,7 +204,8 @@ export default function Specialization() {
           'doctor': 'Doctor',
           'nurse': 'Nurse',
           'physiotherapist': 'Physiotherapist',
-          'social worker': 'Social Worker'
+          'social worker': 'Social Worker',
+          'pharmacist': 'Pharmacist'
         };
         return (
           <Typography
@@ -374,6 +375,7 @@ export default function Specialization() {
                 <MenuItem value="nurse">Nurse</MenuItem>
                 <MenuItem value="physiotherapist">Physiotherapist</MenuItem>
                 <MenuItem value="social worker">Social Worker</MenuItem>
+                <MenuItem value="pharmacist">Pharmacist</MenuItem>
               </Select>
             </FormControl>
           </Stack>

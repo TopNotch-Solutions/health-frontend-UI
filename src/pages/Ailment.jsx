@@ -49,6 +49,7 @@ export default function Ailment() {
     description: '',
     initialCost: '',
     specialization: [],
+    conferrencing: false,
     image: '',
   });
   const [imageFile, setImageFile] = useState(null);
@@ -104,6 +105,7 @@ export default function Ailment() {
             initialCost: initialCost,
             cost: cost,
             commission: commission,
+            conferrencing: Boolean(ailment.conferrencing),
             image: ailment.image || '',
             specialization: Array.isArray(ailment.specialization) 
               ? ailment.specialization.map(spec => spec?.title || spec || 'N/A').join(', ')
@@ -148,12 +150,21 @@ export default function Ailment() {
         description: ailment.description,
         initialCost: ailment.initialCost || '',
         specialization: Array.isArray(ailment.specializationIds) ? ailment.specializationIds : [],
+        conferrencing: Boolean(ailment.conferrencing),
         image: ailment.image || '',
       });
       setImageFile(null);
     } else {
       setIsEdit(false);
-      setCurrentAilment({ id: null, title: '', description: '', initialCost: '', specialization: [], image: '' });
+      setCurrentAilment({
+        id: null,
+        title: '',
+        description: '',
+        initialCost: '',
+        specialization: [],
+        conferrencing: false,
+        image: '',
+      });
       setImageFile(null);
     }
     setDialogOpen(true);
@@ -189,6 +200,7 @@ export default function Ailment() {
             description: currentAilment.description,
             initialCost: parseFloat(currentAilment.initialCost),
             specialization: currentAilment.specialization,
+            conferrencing: Boolean(currentAilment.conferrencing),
           }
         );
         if (response.message) {
@@ -209,6 +221,7 @@ export default function Ailment() {
         formData.append('description', currentAilment.description);
         formData.append('initialCost', String(parseFloat(currentAilment.initialCost)));
         formData.append('specialization', JSON.stringify(currentAilment.specialization));
+        formData.append('conferrencing', String(Boolean(currentAilment.conferrencing)));
         formData.append('image', imageFile);
 
         const response = await fetchFormData(
@@ -334,6 +347,25 @@ export default function Ailment() {
         }
         return `N$${numValue.toFixed(2)}`;
       }
+    },
+    {
+      field: 'conferrencing',
+      headerName: 'Video Conferrencing',
+      width: 170,
+      renderCell: (params) => {
+        const isEnabled = Boolean(params.value);
+        return (
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              color: isEnabled ? 'success.main' : 'error.main',
+            }}
+          >
+            {isEnabled ? 'Enabled' : 'Disabled'}
+          </Typography>
+        );
+      },
     },
     { field: 'specialization', headerName: 'Specializations', width: 250 },
     {
@@ -526,6 +558,20 @@ export default function Ailment() {
                 />
               </>
             )}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={Boolean(currentAilment.conferrencing)}
+                  onChange={(e) =>
+                    setCurrentAilment({
+                      ...currentAilment,
+                      conferrencing: e.target.checked,
+                    })
+                  }
+                />
+              }
+              label="Enable Video Conferrencing"
+            />
             {!isEdit && (
               <>
                 <Button
