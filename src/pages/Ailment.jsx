@@ -49,7 +49,7 @@ export default function Ailment() {
     description: '',
     initialCost: '',
     specialization: [],
-    conferrencing: false,
+    supportsTeleconsultation: false,
     image: '',
   });
   const [imageFile, setImageFile] = useState(null);
@@ -105,7 +105,7 @@ export default function Ailment() {
             initialCost: initialCost,
             cost: cost,
             commission: commission,
-            conferrencing: Boolean(ailment.conferrencing),
+            supportsTeleconsultation: Boolean(ailment.supportsTeleconsultation),
             image: ailment.image || '',
             specialization: Array.isArray(ailment.specialization) 
               ? ailment.specialization.map(spec => spec?.title || spec || 'N/A').join(', ')
@@ -150,7 +150,7 @@ export default function Ailment() {
         description: ailment.description,
         initialCost: ailment.initialCost || '',
         specialization: Array.isArray(ailment.specializationIds) ? ailment.specializationIds : [],
-        conferrencing: Boolean(ailment.conferrencing),
+        supportsTeleconsultation: Boolean(ailment.supportsTeleconsultation),
         image: ailment.image || '',
       });
       setImageFile(null);
@@ -162,7 +162,7 @@ export default function Ailment() {
         description: '',
         initialCost: '',
         specialization: [],
-        conferrencing: false,
+        supportsTeleconsultation: false,
         image: '',
       });
       setImageFile(null);
@@ -200,7 +200,7 @@ export default function Ailment() {
             description: currentAilment.description,
             initialCost: parseFloat(currentAilment.initialCost),
             specialization: currentAilment.specialization,
-            conferrencing: Boolean(currentAilment.conferrencing),
+            supportsTeleconsultation: Boolean(currentAilment.supportsTeleconsultation),
           }
         );
         if (response.message) {
@@ -221,7 +221,7 @@ export default function Ailment() {
         formData.append('description', currentAilment.description);
         formData.append('initialCost', String(parseFloat(currentAilment.initialCost)));
         formData.append('specialization', JSON.stringify(currentAilment.specialization));
-        formData.append('conferrencing', String(Boolean(currentAilment.conferrencing)));
+        formData.append('supportsTeleconsultation', String(Boolean(currentAilment.supportsTeleconsultation)));
         formData.append('image', imageFile);
 
         const response = await fetchFormData(
@@ -349,8 +349,8 @@ export default function Ailment() {
       }
     },
     {
-      field: 'conferrencing',
-      headerName: 'Video Conferrencing',
+      field: 'supportsTeleconsultation',
+      headerName: 'Video supportsTeleconsultation',
       width: 170,
       renderCell: (params) => {
         const isEnabled = Boolean(params.value);
@@ -561,16 +561,16 @@ export default function Ailment() {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={Boolean(currentAilment.conferrencing)}
+                  checked={Boolean(currentAilment.supportsTeleconsultation)}
                   onChange={(e) =>
                     setCurrentAilment({
                       ...currentAilment,
-                      conferrencing: e.target.checked,
+                      supportsTeleconsultation: e.target.checked,
                     })
                   }
                 />
               }
-              label="Enable Video Conferrencing"
+              label="Enable Video supportsTeleconsultation"
             />
             {!isEdit && (
               <>
