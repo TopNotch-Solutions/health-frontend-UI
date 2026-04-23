@@ -727,7 +727,7 @@ function Notifications() {
                 >
                   {appUsers.map((user) => (
                     <MenuItem key={user._id} value={user._id}>
-                      {user.fullname || user.email || user.walletID} ({user.role || 'N/A'})
+                      {user.fullname || user.email || user.cellphoneNumber || 'Unknown User'} ({user.role || 'N/A'})
                     </MenuItem>
                   ))}
                 </Select>

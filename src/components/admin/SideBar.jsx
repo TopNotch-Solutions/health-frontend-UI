@@ -23,7 +23,7 @@ import "../../assets/css/Sidebar.css";
 
 const menuItems = [
   { id: 1, title: "Dashboard", icon: DashboardIcon, path: "/Dashboard" },
-  { id: 2, title: "Registration", icon: AddBusinessIcon, path: "/registration" },
+  { id: 2, title: "User Management", icon: AddBusinessIcon, path: "/users" },
   { id: 3, title: "Request", icon: RequestQuoteIcon, path: "/Request" },
   { id: 4, title: "Specializations", icon: LocalHospitalIcon, path: "/specializations" },
   { id: 5, title: "Ailments", icon: HealingIcon, path: "/ailments" },
@@ -33,7 +33,7 @@ const menuItems = [
   { id: 9, title: "FAQs", icon: HelpIcon, path: "/FAQ" },
   { id: 10, title: "Adverts", icon: CampaignIcon, path: "/adverts" },
   { id: 11, title: "Notifications", icon: NotificationsIcon, path: "/Notifications" },
-  { id: 12, title: "Reporting", icon: PictureAsPdfIcon, path: "/Reporting" },
+  { id: 12, title: "Reports", icon: PictureAsPdfIcon, path: "/Reporting" },
   { id: 13, title: "Profile", icon: AccountCircleIcon, path: "/Profile" },
 ];
 

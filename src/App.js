@@ -8,9 +8,9 @@ import "react-toastify/dist/ReactToastify.css";
 import Topbar from "./components/admin/TopBar";
 import Sidebar from "./components/admin/SideBar";
 import Dashboard from "./pages/Dashboard";
-import Bso from "./pages/Bso";
+import Transactions from "./pages/Bso";
 import Content from "./pages/Content";
-import Msme from "./pages/Msme";
+import UserManagement from "./pages/Msme";
 import User from "./pages/User";
 import Notifications from "./pages/Notifications";
 import Reporting from "./pages/Reporting";
@@ -62,10 +62,11 @@ function App() {
                   <Route path="/" element={<AdminLogin />} />
                   <Route element={<AdminRoute />}>
                     <Route path="/Dashboard" element={<Dashboard />} />
-                    <Route path="/transactions" element={<Bso />} />
+                    <Route path="/transactions" element={<Transactions />} />
                     <Route path="/administrators" element={<User />} />
                     <Route path="/issues" element={<Content />} />
-                    <Route path="/registration" element={<Msme />} />
+                    <Route path="/registration" element={<UserManagement />} />
+                    <Route path="/users" element={<UserManagement />} />
                     <Route path="/Request" element={<Request />} />
                     <Route path="/specializations" element={<Specialization />} />
                     <Route path="/ailments" element={<Ailment />} />

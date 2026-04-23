@@ -38,7 +38,6 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import GroupIcon from '@mui/icons-material/Group';
 import PhoneIcon from '@mui/icons-material/Phone';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -69,7 +68,7 @@ const theme = createTheme({
   },
 });
 
-export default function Registration() {
+export default function UserManagement() {
   const { canRead, canWrite, canDelete } = usePermissions();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -82,9 +81,6 @@ export default function Registration() {
     id: null,
     fullname: '',
     cellphoneNumber: '',
-    walletID: '',
-    balance: 0.0,
-    PreviousBalance: 0.0,
     address: '',
     role: 'passager',
     driverIDFront: '',
@@ -161,7 +157,6 @@ export default function Registration() {
         (user) =>
           user.fullname?.toLowerCase().includes(lowercasedQuery) ||
           user.cellphoneNumber.toLowerCase().includes(lowercasedQuery) ||
-          user.walletID.toLowerCase().includes(lowercasedQuery) ||
           user.address?.toLowerCase().includes(lowercasedQuery) ||
           user.role.toLowerCase().includes(lowercasedQuery)
       );
@@ -185,9 +180,6 @@ export default function Registration() {
         id: null,
         fullname: '',
         cellphoneNumber: '',
-        walletID: '',
-        balance: 0.0,
-        PreviousBalance: 0.0,
         address: '',
         role: 'passager',
         driverIDFront: '',
@@ -227,8 +219,8 @@ export default function Registration() {
   };
 
   const handleSubmit = () => {
-    if (!currentUser.cellphoneNumber || !currentUser.walletID || !currentUser.verifiedCellphoneNumber) {
-      setSnackbarMessage('Cellphone Number, Wallet ID, and Verified Cellphone Number are required.');
+    if (!currentUser.cellphoneNumber || !currentUser.verifiedCellphoneNumber) {
+      setSnackbarMessage('Cellphone Number and Verified Cellphone Number are required.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
@@ -365,8 +357,6 @@ export default function Registration() {
     { field: 'id', headerName: 'ID', width: 80 },
     { field: 'fullname', headerName: 'Full Name', width: 130 },
     { field: 'cellphoneNumber', headerName: 'Phone', width: 120 },
-    { field: 'walletID', headerName: 'Wallet ID', width: 100 },
-    { field: 'balance', headerName: 'Balance', width: 100, renderCell: (params) => `N$${params.value.toFixed(2)}` },
     {
       field: 'role',
       headerName: 'Role',
@@ -723,44 +713,11 @@ export default function Registration() {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
-                name="walletID"
-                label="Wallet ID"
-                variant="outlined"
-                fullWidth
-                value={currentUser.walletID || ''}
-                onChange={handleChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
                 name="address"
                 label="Address"
                 variant="outlined"
                 fullWidth
                 value={currentUser.address || ''}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="balance"
-                label="Balance"
-                type="number"
-                variant="outlined"
-                fullWidth
-                value={currentUser.balance}
-                onChange={handleChange}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                name="PreviousBalance"
-                label="Previous Balance"
-                type="number"
-                variant="outlined"
-                fullWidth
-                value={currentUser.PreviousBalance}
                 onChange={handleChange}
               />
             </Grid>
@@ -1039,15 +996,6 @@ export default function Registration() {
                   <TextField
                     label="Cellphone Number"
                     value={selectedUserForDocuments.cellphoneNumber || ''}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Wallet ID"
-                    value={selectedUserForDocuments.walletID || ''}
                     fullWidth
                     InputProps={{ readOnly: true }}
                     variant="outlined"

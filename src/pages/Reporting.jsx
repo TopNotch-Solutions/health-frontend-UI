@@ -66,8 +66,6 @@ function Reporting() {
     { field: 'email', headerName: 'Email', width: 250 },
     { field: 'cellphoneNumber', headerName: 'Phone', width: 150 },
     { field: 'role', headerName: 'Role', width: 150 },
-    { field: 'walletID', headerName: 'Wallet ID', width: 150 },
-    { field: 'balance', headerName: 'Balance', width: 120, type: 'number' },
     { field: 'createdAt', headerName: 'Created', width: 180, renderCell: (params) => new Date(params.value).toLocaleDateString() },
   ];
 

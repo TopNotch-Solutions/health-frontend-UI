@@ -54,7 +54,7 @@ const theme = createTheme({
   },
 });
 
-export default function Bso() {
+export default function Transactions() {
   const { canRead, canWrite, canDelete } = usePermissions();
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -111,15 +111,11 @@ export default function Bso() {
           const userEmail = typeof transaction.userId === 'object' 
             ? transaction.userId.email || ''
             : '';
-          const walletID = typeof transaction.userId === 'object' 
-            ? transaction.userId.walletID || transaction.walletID || ''
-            : transaction.walletID || '';
           
           return (
             userId.toLowerCase().includes(lowercasedQuery) ||
             userFullname.toLowerCase().includes(lowercasedQuery) ||
             userEmail.toLowerCase().includes(lowercasedQuery) ||
-            walletID.toLowerCase().includes(lowercasedQuery) ||
             transaction.type?.toLowerCase().includes(lowercasedQuery) ||
             transaction.status?.toLowerCase().includes(lowercasedQuery) ||
             transaction.referrence?.toLowerCase().includes(lowercasedQuery) ||
@@ -187,18 +183,6 @@ export default function Bso() {
       renderCell: (params) => {
         if (typeof params.value === 'object' && params.value) {
           return params.value.fullname || params.value.email || params.value._id || 'N/A';
-        }
-        return params.value || 'N/A';
-      }
-    },
-    { 
-      field: 'walletID', 
-      headerName: 'Wallet ID', 
-      width: 100,
-      renderCell: (params) => {
-        // Check if walletID is in the userId object (populated) or in the transaction
-        if (typeof params.row.userId === 'object' && params.row.userId?.walletID) {
-          return params.row.userId.walletID;
         }
         return params.value || 'N/A';
       }

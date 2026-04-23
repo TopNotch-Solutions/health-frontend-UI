@@ -47,7 +47,9 @@ export default function Ailment() {
     id: null,
     title: '',
     description: '',
-    initialCost: '',
+    teleconsultationCost: '',
+    physicalconsultationCost: '',
+    consultationType: '',
     specialization: [],
     supportsTeleconsultation: false,
     image: '',
@@ -85,26 +87,32 @@ export default function Ailment() {
       if (response.ailments) {
         console.log('Raw API response:', response.ailments); // Debug: see what API returns
         const formatted = response.ailments.map((ailment) => {
-          // Directly use values from API, convert to number if needed
-          const initialCost = typeof ailment.initialCost === 'number' 
-            ? ailment.initialCost 
-            : (ailment.initialCost !== undefined && ailment.initialCost !== null ? parseFloat(ailment.initialCost) : 0);
-          
-          const cost = typeof ailment.cost === 'number' 
-            ? ailment.cost 
-            : (ailment.cost !== undefined && ailment.cost !== null ? parseFloat(ailment.cost) : 0);
-          
-          const commission = typeof ailment.commission === 'number' 
-            ? ailment.commission 
-            : (ailment.commission !== undefined && ailment.commission !== null ? parseFloat(ailment.commission) : 0);
+          const teleconsultationCost =
+            typeof ailment.teleconsultationCost === 'number'
+              ? ailment.teleconsultationCost
+              : (
+                ailment.teleconsultationCost !== undefined &&
+                ailment.teleconsultationCost !== null
+                  ? parseFloat(ailment.teleconsultationCost)
+                  : null
+              );
+
+          const physicalconsultationCost =
+            typeof ailment.physicalconsultationCost === 'number'
+              ? ailment.physicalconsultationCost
+              : (
+                ailment.physicalconsultationCost !== undefined &&
+                ailment.physicalconsultationCost !== null
+                  ? parseFloat(ailment.physicalconsultationCost)
+                  : null
+              );
           
           return {
             id: ailment._id,
             title: ailment.title || '',
             description: ailment.description || '',
-            initialCost: initialCost,
-            cost: cost,
-            commission: commission,
+            teleconsultationCost,
+            physicalconsultationCost,
             supportsTeleconsultation: Boolean(ailment.supportsTeleconsultation),
             image: ailment.image || '',
             specialization: Array.isArray(ailment.specialization) 
@@ -148,7 +156,22 @@ export default function Ailment() {
         id: ailment.id,
         title: ailment.title,
         description: ailment.description,
-        initialCost: ailment.initialCost || '',
+        teleconsultationCost:
+          ailment.teleconsultationCost !== null && ailment.teleconsultationCost !== undefined
+            ? ailment.teleconsultationCost
+            : '',
+        physicalconsultationCost:
+          ailment.physicalconsultationCost !== null && ailment.physicalconsultationCost !== undefined
+            ? ailment.physicalconsultationCost
+            : '',
+        consultationType:
+          ailment.teleconsultationCost !== null && ailment.teleconsultationCost !== undefined
+            ? 'tele'
+            : (
+              ailment.physicalconsultationCost !== null && ailment.physicalconsultationCost !== undefined
+                ? 'physical'
+                : ''
+            ),
         specialization: Array.isArray(ailment.specializationIds) ? ailment.specializationIds : [],
         supportsTeleconsultation: Boolean(ailment.supportsTeleconsultation),
         image: ailment.image || '',
@@ -160,7 +183,9 @@ export default function Ailment() {
         id: null,
         title: '',
         description: '',
-        initialCost: '',
+        teleconsultationCost: '',
+        physicalconsultationCost: '',
+        consultationType: '',
         specialization: [],
         supportsTeleconsultation: false,
         image: '',
@@ -178,13 +203,30 @@ export default function Ailment() {
     if (
       !currentAilment.title ||
       !currentAilment.description ||
-      !currentAilment.initialCost ||
       !currentAilment.specialization ||
       currentAilment.specialization.length === 0
     ) {
       setSnackbarMessage(
         'Please fill out all required fields and select at least one specialization.'
       );
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (!currentAilment.consultationType) {
+      setSnackbarMessage('Please select one consultation type.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const selectedCost =
+      currentAilment.consultationType === 'tele'
+        ? parseFloat(currentAilment.teleconsultationCost)
+        : parseFloat(currentAilment.physicalconsultationCost);
+
+    if (isNaN(selectedCost) || selectedCost < 0) {
+      setSnackbarMessage('Please enter a valid consultation cost for the selected type.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
@@ -198,9 +240,16 @@ export default function Ailment() {
           {
             title: currentAilment.title,
             description: currentAilment.description,
-            initialCost: parseFloat(currentAilment.initialCost),
+            teleconsultationCost:
+              currentAilment.consultationType === 'tele'
+                ? parseFloat(currentAilment.teleconsultationCost)
+                : null,
+            physicalconsultationCost:
+              currentAilment.consultationType === 'physical'
+                ? parseFloat(currentAilment.physicalconsultationCost)
+                : null,
             specialization: currentAilment.specialization,
-            supportsTeleconsultation: Boolean(currentAilment.supportsTeleconsultation),
+            supportsTeleconsultation: currentAilment.consultationType === 'tele',
           }
         );
         if (response.message) {
@@ -219,9 +268,20 @@ export default function Ailment() {
         const formData = new FormData();
         formData.append('title', currentAilment.title);
         formData.append('description', currentAilment.description);
-        formData.append('initialCost', String(parseFloat(currentAilment.initialCost)));
+        formData.append(
+          'teleconsultationCost',
+          currentAilment.consultationType === 'tele'
+            ? String(parseFloat(currentAilment.teleconsultationCost))
+            : ''
+        );
+        formData.append(
+          'physicalconsultationCost',
+          currentAilment.consultationType === 'physical'
+            ? String(parseFloat(currentAilment.physicalconsultationCost))
+            : ''
+        );
         formData.append('specialization', JSON.stringify(currentAilment.specialization));
-        formData.append('supportsTeleconsultation', String(Boolean(currentAilment.supportsTeleconsultation)));
+        formData.append('supportsTeleconsultation', String(currentAilment.consultationType === 'tele'));
         formData.append('image', imageFile);
 
         const response = await fetchFormData(
@@ -316,10 +376,10 @@ export default function Ailment() {
   const columns = [
     { field: 'title', headerName: 'Title', width: 200 },
     { field: 'description', headerName: 'Description', width: 300 },
-    { 
-      field: 'initialCost', 
-      headerName: 'Initial Cost', 
-      width: 120,
+    {
+      field: 'physicalconsultationCost',
+      headerName: 'Physical Consultation Cost',
+      width: 200,
       renderCell: (params) => {
         const value = params.value;
         if (value === undefined || value === null || value === '') {
@@ -332,10 +392,10 @@ export default function Ailment() {
         return `N$${numValue.toFixed(2)}`;
       }
     },
-    { 
-      field: 'cost', 
-      headerName: 'Cost (After Commission)', 
-      width: 150,
+    {
+      field: 'teleconsultationCost',
+      headerName: 'Teleconsultation Cost',
+      width: 170,
       renderCell: (params) => {
         const value = params.value;
         if (value === undefined || value === null || value === '') {
@@ -526,52 +586,70 @@ export default function Ailment() {
               onChange={(e) => setCurrentAilment({ ...currentAilment, description: e.target.value })}
               required
             />
-            <TextField
-              label="Initial Cost"
-              variant="outlined"
-              fullWidth
-              type="number"
-              value={currentAilment.initialCost}
-              onChange={(e) => setCurrentAilment({ ...currentAilment, initialCost: e.target.value })}
+            <FormControl
+              component="fieldset"
               required
-              inputProps={{ step: "0.01", min: "0" }}
-            />
-            {currentAilment.initialCost && !isNaN(parseFloat(currentAilment.initialCost)) && (
-              <>
-                <TextField
-                  label="Commission (15%)"
-                  variant="outlined"
-                  fullWidth
-                  type="number"
-                  value={(parseFloat(currentAilment.initialCost) * 0.15).toFixed(2)}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                />
-                <TextField
-                  label="Cost (After Commission)"
-                  variant="outlined"
-                  fullWidth
-                  type="number"
-                  value={(parseFloat(currentAilment.initialCost) * 0.85).toFixed(2)}
-                  InputProps={{ readOnly: true }}
-                  disabled
-                />
-              </>
-            )}
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={Boolean(currentAilment.supportsTeleconsultation)}
-                  onChange={(e) =>
-                    setCurrentAilment({
-                      ...currentAilment,
-                      supportsTeleconsultation: e.target.checked,
-                    })
+            >
+              <FormLabel component="legend">Consultation Type (Select one)</FormLabel>
+              <FormGroup row>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={currentAilment.consultationType === 'physical'}
+                      onChange={(e) =>
+                        setCurrentAilment({
+                          ...currentAilment,
+                          consultationType: e.target.checked ? 'physical' : '',
+                        })
+                      }
+                    />
                   }
+                  label="Physical Consultation"
                 />
-              }
-              label="Enable Video supportsTeleconsultation"
-            />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={currentAilment.consultationType === 'tele'}
+                      onChange={(e) =>
+                        setCurrentAilment({
+                          ...currentAilment,
+                          consultationType: e.target.checked ? 'tele' : '',
+                        })
+                      }
+                    />
+                  }
+                  label="Teleconsultation"
+                />
+              </FormGroup>
+            </FormControl>
+            {currentAilment.consultationType === 'physical' && (
+              <TextField
+                label="Physical Consultation Cost"
+                variant="outlined"
+                fullWidth
+                type="number"
+                value={currentAilment.physicalconsultationCost}
+                onChange={(e) =>
+                  setCurrentAilment({ ...currentAilment, physicalconsultationCost: e.target.value })
+                }
+                required
+                inputProps={{ step: "0.01", min: "0" }}
+              />
+            )}
+            {currentAilment.consultationType === 'tele' && (
+              <TextField
+                label="Teleconsultation Cost"
+                variant="outlined"
+                fullWidth
+                type="number"
+                value={currentAilment.teleconsultationCost}
+                onChange={(e) =>
+                  setCurrentAilment({ ...currentAilment, teleconsultationCost: e.target.value })
+                }
+                required
+                inputProps={{ step: "0.01", min: "0" }}
+              />
+            )}
             {!isEdit && (
               <>
                 <Button
