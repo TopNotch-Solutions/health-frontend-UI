@@ -409,7 +409,7 @@ export default function User() {
         );
       },
     },
-    { field: 'id', headerName: 'ID', width: 80, renderCell: (params) => params.value?.substring(0, 8) || params.value },
+    // { field: 'id', headerName: 'ID', width: 80, renderCell: (params) => params.value?.substring(0, 8) || params.value },
     { field: 'firstName', headerName: 'First Name', width: 100 },
     { field: 'lastName', headerName: 'Last Name', width: 100 },
     { field: 'email', headerName: 'Email', width: 200 },
@@ -428,34 +428,34 @@ export default function User() {
         />
       ),
     },
-    {
-      field: 'permissions',
-      headerName: 'Permissions',
-      width: 200,
-      renderCell: (params) => {
-        const perms = params.value || { read: true, write: false, delete: false };
-        return (
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {perms.read && (
-              <Chip label="Read" size="small" color="primary" variant="outlined" />
-            )}
-            {perms.write && (
-              <Chip label="Write" size="small" color="success" variant="outlined" />
-            )}
-            {perms.delete && (
-              <Chip label="Delete" size="small" color="error" variant="outlined" />
-            )}
-            {!perms.read && !perms.write && !perms.delete && (
-              <Typography variant="body2" color="text.secondary">No permissions</Typography>
-            )}
-          </Box>
-        );
-      },
-    },
+    // {
+    //   field: 'permissions',
+    //   headerName: 'Permissions',
+    //   width: 200,
+    //   renderCell: (params) => {
+    //     const perms = params.value || { read: true, write: false, delete: false };
+    //     return (
+    //       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+    //         {perms.read && (
+    //           <Chip label="Read" size="small" color="primary" variant="outlined" />
+    //         )}
+    //         {perms.write && (
+    //           <Chip label="Write" size="small" color="success" variant="outlined" />
+    //         )}
+    //         {perms.delete && (
+    //           <Chip label="Delete" size="small" color="error" variant="outlined" />
+    //         )}
+    //         {!perms.read && !perms.write && !perms.delete && (
+    //           <Typography variant="body2" color="text.secondary">No permissions</Typography>
+    //         )}
+    //       </Box>
+    //     );
+    //   },
+    // },
     {
       field: 'createdAt',
       headerName: 'Added On',
-      width: 150,
+      width: 100,
       renderCell: (params) => (
         <Typography variant="body2">
           {new Date(params.value).toLocaleDateString()}

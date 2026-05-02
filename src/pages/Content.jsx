@@ -31,9 +31,46 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import useFetch from '../utils/fetch';
+import fetchJSON from '../utils/fetchJSON';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
+
+const API_BASE = 'https://apihealthconnect.kopanovertex.com';
+
+/** Backend: GET /api/portal/issue/counts */
+const ISSUE_COUNTS_URL = `${API_BASE}/api/portal/issue/counts`;
+
+/** Backend: GET /api/portal/issue/all — { status, count, data } */
+const ISSUES_ALL_URL = `${API_BASE}/api/portal/issue/all`;
+
+/** Backend: PATCH body `{ status }` uses store keys: `in_progress` | `closed` */
+const issueUpdateStatusUrl = (id) =>
+  `${API_BASE}/api/portal/issue/update-status/${id}`;
+
+/** Next portal status the API accepts (Open → in_progress; In Progress → closed). */
+function defaultNextPortalStatus(issue) {
+  if (!issue) return '';
+  if (issue.status === 'Open') return 'in_progress';
+  if (issue.status === 'In Progress') return 'closed';
+  return '';
+}
+
+function issueReporterLabel(userId) {
+  if (userId == null) return '';
+  if (typeof userId === 'string') return userId;
+  return userId.fullname || userId.email || userId.cellphoneNumber || userId._id || '';
+}
+
+function issueSearchText(issue) {
+  const parts = [issue.title, issue.description, issue.status];
+  const u = issue.userId;
+  if (typeof u === 'string') {
+    parts.push(u);
+  } else if (u && typeof u === 'object') {
+    parts.push(u._id, u.fullname, u.email, u.cellphoneNumber);
+  }
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -102,10 +139,15 @@ const mockIssues = [
 
 export default function Content() {
   const { canRead, canWrite, canDelete } = usePermissions();
-  const { data, loading, error, request } = useFetch();
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [issues, setIssues] = useState([]);
+  const [issueCounts, setIssueCounts] = useState({
+    totalIssues: 0,
+    allPendingIssues: 0,
+    allProgress: 0,
+    allClosed: 0,
+  });
   const [filteredIssues, setFilteredIssues] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -113,33 +155,46 @@ export default function Content() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('');
 
-  // Update filteredIssues whenever issues, searchQuery, or filters change
   useEffect(() => {
-  const fetchIssues = async () => {
-    try {
-      const response = await request('/portal/issues/all-issues', 'GET');
-      if (response.status === 'SUCCESS') {
-        setIssues(response.data);
+    const fetchIssues = async () => {
+      try {
+        const response = await fetchJSON(ISSUES_ALL_URL, 'GET');
+        if (response.status === 'SUCCESS' && Array.isArray(response.data)) {
+          setIssues(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch issues:', err);
       }
-    } catch (err) {
-      console.error("Failed to fetch issues:", err);
-    }
-  };
+    };
+    fetchIssues();
+  }, []);
 
-  fetchIssues();
-}, []);
+  useEffect(() => {
+    const fetchIssueCounts = async () => {
+      try {
+        const countRes = await fetchJSON(ISSUE_COUNTS_URL, 'GET');
+        if (countRes.status === 'SUCCESS' && countRes.data) {
+          setIssueCounts({
+            totalIssues: Number(countRes.data.totalIssues) || 0,
+            allPendingIssues: Number(countRes.data.allPendingIssues) || 0,
+            allProgress: Number(countRes.data.allProgress) || 0,
+            allClosed: Number(countRes.data.allClosed) || 0,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch issue counts:', err);
+      }
+    };
+    fetchIssueCounts();
+  }, []);
   useEffect(() => {
     let filtered = issues;
 
     // Apply search filter
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (issue) =>
-          issue.title.toLowerCase().includes(lowercasedQuery) ||
-          issue.description.toLowerCase().includes(lowercasedQuery) ||
-          issue.userId.toLowerCase().includes(lowercasedQuery) ||
-          issue.status.toLowerCase().includes(lowercasedQuery)
+      filtered = filtered.filter((issue) =>
+        issueSearchText(issue).includes(lowercasedQuery)
       );
     }
 
@@ -181,12 +236,23 @@ export default function Content() {
 
   // Column definitions for the DataGrid
   const issueColumns = [
-    { field: '_id', headerName: 'ID', width: 80 },
-    { field: 'userId', headerName: 'User ID', width: 100 },
+    // { field: '_id', headerName: 'ID', width: 80 },
+    {
+      field: 'userId',
+      headerName: 'Reporter',
+      width: 170,
+      sortable: false,
+      valueGetter: (value, row) => issueReporterLabel(row.userId),
+      renderCell: (params) => (
+        <Typography variant="body2" noWrap title={issueReporterLabel(params.row.userId)}>
+          {issueReporterLabel(params.row.userId) || '—'}
+        </Typography>
+      ),
+    },
     {
       field: 'title',
       headerName: 'Title',
-      width: 190,
+      width: 150,
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 600 }}>
           {params.value}
@@ -196,7 +262,7 @@ export default function Content() {
     {
       field: 'description',
       headerName: 'Description',
-      width: 330,
+      width: 200,
       renderCell: (params) => (
         <Typography
           variant="body2"
@@ -227,23 +293,27 @@ export default function Content() {
       ),
     },
     {
-      field: 'date',
+      field: 'createdAt',
       headerName: 'Date',
       width: 120,
-      renderCell: (params) => (
-        <Typography variant="body2">
-          {new Date(params.value).toLocaleDateString()}
-        </Typography>
-      ),
+      valueGetter: (value, row) => row.createdAt ?? row.date,
+      renderCell: (params) => {
+        const raw = params.row.createdAt ?? params.row.date;
+        return (
+          <Typography variant="body2">
+            {raw ? new Date(raw).toLocaleDateString() : '—'}
+          </Typography>
+        );
+      },
     },
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 120,
+      width: 80,
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {canWrite && (
+          {canWrite && params.row.status !== 'Closed' && (
             <IconButton
               size="small"
               onClick={(e) => {
@@ -272,59 +342,54 @@ export default function Content() {
     },
   ];
 
-  // Statistics calculation
-  const stats = {
-    id: issues._id,
-    total: issues.length,
-    open: issues.filter((issue) => issue.status === 'Open').length,
-    inProgress: issues.filter((issue) => issue.status === 'In Progress').length,
-    closed: issues.filter((issue) => issue.status === 'Closed').length,
-  };
-
   // Action handlers
   const handleEditIssue = (issue) => {
-    console.log('Editing issue:', issue);
     setSelectedIssue(issue);
-    setNewStatus(issue.status);
+    setNewStatus(defaultNextPortalStatus(issue));
     setEditDialogOpen(true);
   };
 
-  const handleUpdateStatus = async() => {
-    try{
-      const response = await request(`/portal/issues/update-issue/${selectedIssue._id}`, 'PUT', { status: newStatus });
+  const handleUpdateStatus = async () => {
+    if (!selectedIssue?._id || !newStatus) {
+      return;
+    }
+    try {
+      const response = await fetchJSON(
+        issueUpdateStatusUrl(selectedIssue._id),
+        'PATCH',
+        { status: newStatus }
+      );
       if (response.status === 'SUCCESS') {
         setEditDialogOpen(false);
         Swal.fire({
-          position: "center",
-          icon: "success",  
-          title: "Issue status updated successfully!",
+          position: 'center',
+          icon: 'success',
+          title: response.message || 'Issue status updated successfully!',
           showConfirmButton: false,
           timer: 4000,
         });
         window.location.reload();
-    }else{
+      } else {
+        setEditDialogOpen(false);
+        Swal.fire({
+          position: 'center',
+          icon: 'error',
+          title: response.message || 'Failed to update issue status!',
+          showConfirmButton: false,
+          timer: 4000,
+        });
+      }
+    } catch (error) {
       setEditDialogOpen(false);
+      console.error('Error updating issue status:', error);
       Swal.fire({
-        position: "center",
-        icon: "error",  
-        title: "Failed to update issue status!",
+        position: 'center',
+        icon: 'error',
+        title: error.message || 'An error occurred while updating issue status!',
         showConfirmButton: false,
         timer: 4000,
       });
     }
-    
-    }catch(error){
-      setEditDialogOpen(false);
-      console.error("Error updating issue status:", error);
-      Swal.fire({
-        position: "center",
-        icon: "error",  
-        title: "An error occurred while updating issue status!",
-        showConfirmButton: false,
-        timer: 4000,
-      });
-    }
-    
   };
 
   const handleDelete = (id) => {
@@ -360,7 +425,7 @@ export default function Content() {
                 <ReportProblemIcon color="primary" fontSize="large" />
                 <Box>
                   <Typography variant="h4" component="div">
-                    {stats.total}
+                    {issueCounts.totalIssues}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Total Issues
@@ -378,7 +443,7 @@ export default function Content() {
                 <ReportProblemIcon color="error" fontSize="large" />
                 <Box>
                   <Typography variant="h4" component="div">
-                    {stats.open}
+                    {issueCounts.allPendingIssues}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Open Issues
@@ -396,7 +461,7 @@ export default function Content() {
                 <HourglassEmptyIcon color="warning" fontSize="large" />
                 <Box>
                   <Typography variant="h4" component="div">
-                    {stats.inProgress}
+                    {issueCounts.allProgress}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Issues In Progress
@@ -414,7 +479,7 @@ export default function Content() {
                 <CheckCircleIcon color="success" fontSize="large" />
                 <Box>
                   <Typography variant="h4" component="div">
-                    {stats.closed}
+                    {issueCounts.allClosed}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Closed Issues
@@ -502,7 +567,7 @@ export default function Content() {
                       },
                     },
                     sorting: {
-                      sortModel: [{ field: 'date', sort: 'desc' }],
+                      sortModel: [{ field: 'createdAt', sort: 'desc' }],
                     },
                   }}
                   pageSizeOptions={[25, 50, 100]}
@@ -537,10 +602,19 @@ export default function Content() {
                   label="New Status"
                   onChange={(e) => setNewStatus(e.target.value)}
                 >
-                  <MenuItem value="In Progress">In Progress</MenuItem>
-                  <MenuItem value="Closed">Closed</MenuItem>
+                  {selectedIssue.status === 'Open' && (
+                    <MenuItem value="in_progress">In progress</MenuItem>
+                  )}
+                  {selectedIssue.status === 'In Progress' && (
+                    <MenuItem value="closed">Closed</MenuItem>
+                  )}
                 </Select>
               </FormControl>
+              {selectedIssue.status === 'Closed' && (
+                <Typography variant="body2" color="text.secondary">
+                  Closed issues cannot be changed.
+                </Typography>
+              )}
             </Stack>
           )}
         </DialogContent>
@@ -550,7 +624,7 @@ export default function Content() {
             <Button
               variant="contained"
               onClick={handleUpdateStatus}
-              disabled={newStatus === selectedIssue?.status}
+              disabled={!newStatus || selectedIssue?.status === 'Closed'}
             >
               Update
             </Button>
