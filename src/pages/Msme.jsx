@@ -36,6 +36,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 import GroupIcon from '@mui/icons-material/Group';
 import PhoneIcon from '@mui/icons-material/Phone';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -43,6 +44,8 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../utils/usePermissions';
@@ -67,6 +70,94 @@ const theme = createTheme({
     fontFamily: 'Roboto, Arial, sans-serif',
   },
 });
+
+const HEALTH_PROVIDER_ROLES = ['doctor', 'nurse', 'physiotherapist', 'social worker', 'pharmacist'];
+const API_FILES_BASE = 'https://apihealthconnect.kopanovertex.com/images/';
+
+const getFileUrl = (filename) => (filename ? `${API_FILES_BASE}${filename}` : '');
+
+const isPdfFile = (filename) => /\.pdf$/i.test(filename || '');
+
+const emptyDocumentBoxSx = {
+  width: '100%',
+  height: 200,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 2,
+  border: '1px dashed #e0e0e0',
+  backgroundColor: '#fafafa',
+};
+
+const framedDocumentSx = {
+  width: '100%',
+  maxHeight: 400,
+  objectFit: 'contain',
+  borderRadius: 2,
+  border: '1px solid #e0e0e0',
+  boxShadow: 1,
+  backgroundColor: '#f5f5f5',
+  p: 1,
+};
+
+function UploadedFilePreview({ filename, label, asPdf = false }) {
+  if (!filename) {
+    return (
+      <Box sx={emptyDocumentBoxSx}>
+        <Typography variant="body2" color="text.secondary">Not provided</Typography>
+      </Box>
+    );
+  }
+
+  const url = getFileUrl(filename);
+  const showAsPdf = asPdf || isPdfFile(filename);
+
+  if (showAsPdf) {
+    return (
+      <Stack spacing={1}>
+        <Box
+          sx={{
+            width: '100%',
+            height: 400,
+            borderRadius: 2,
+            border: '1px solid #e0e0e0',
+            boxShadow: 1,
+            overflow: 'hidden',
+            backgroundColor: '#f5f5f5',
+          }}
+        >
+          <Box
+            component="iframe"
+            src={url}
+            title={label}
+            sx={{ width: '100%', height: '100%', border: 'none' }}
+          />
+        </Box>
+        <Button
+          component="a"
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          size="small"
+          variant="outlined"
+          startIcon={<PictureAsPdfIcon />}
+          endIcon={<OpenInNewIcon />}
+        >
+          Open PDF in new tab
+        </Button>
+      </Stack>
+    );
+  }
+
+  return (
+    <Box
+      component="img"
+      src={url}
+      alt={label}
+      sx={framedDocumentSx}
+    />
+  );
+}
 
 export default function UserManagement() {
   const { canRead, canWrite, canDelete } = usePermissions();
@@ -312,9 +403,9 @@ export default function UserManagement() {
     setDocumentsDialogOpen(true);
   };
 
-  const isHealthProvider = (role) => {
-    return ['doctor', 'nurse', 'physiotherapist', 'social worker'].includes(role);
-  };
+  const isHealthProvider = (role) => HEALTH_PROVIDER_ROLES.includes(role);
+
+  const isPharmacist = (role) => role === 'pharmacist';
 
   const handleCloseSnackbar = (event, reason) => {
     if (reason === 'clickaway') {
@@ -332,6 +423,8 @@ export default function UserManagement() {
       case 'physiotherapist':
       case 'social worker':
         return <LocalHospitalIcon />;
+      case 'pharmacist':
+        return <LocalPharmacyIcon />;
       default:
         return <AccountCircleIcon />;
     }
@@ -641,6 +734,7 @@ export default function UserManagement() {
                       <MenuItem value="nurse">Nurse</MenuItem>
                       <MenuItem value="physiotherapist">Physiotherapist</MenuItem>
                       <MenuItem value="social worker">Social Worker</MenuItem>
+                      <MenuItem value="pharmacist">Pharmacist</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -736,6 +830,7 @@ export default function UserManagement() {
                   <MenuItem value="nurse">Nurse</MenuItem>
                   <MenuItem value="physiotherapist">Physiotherapist</MenuItem>
                   <MenuItem value="social worker">Social Worker</MenuItem>
+                  <MenuItem value="pharmacist">Pharmacist</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -1021,26 +1116,8 @@ export default function UserManagement() {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
-                    label="Region"
-                    value={selectedUserForDocuments.region || 'Not specified'}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
                     label="Email"
                     value={selectedUserForDocuments.email || 'Not provided'}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Date of Birth"
-                    value={selectedUserForDocuments.dateOfBirth ? new Date(selectedUserForDocuments.dateOfBirth).toLocaleDateString() : 'Not provided'}
                     fullWidth
                     InputProps={{ readOnly: true }}
                     variant="outlined"
@@ -1073,7 +1150,7 @@ export default function UserManagement() {
                     variant="outlined"
                   />
                 </Grid>
-                {isHealthProvider(selectedUserForDocuments.role) && (
+                {isHealthProvider(selectedUserForDocuments.role) && !isPharmacist(selectedUserForDocuments.role) && (
                   <>
                     <Grid item xs={12}>
                       <Divider sx={{ my: 1 }} />
@@ -1110,6 +1187,127 @@ export default function UserManagement() {
                       <TextField
                         label="Years of Experience"
                         value={selectedUserForDocuments.yearsOfExperience || 'Not provided'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Document Verification Status"
+                        value={selectedUserForDocuments.isDocumentVerified ? 'Verified' : 'Pending'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Documents Submitted"
+                        value={selectedUserForDocuments.isDocumentsSubmitted ? 'Yes' : 'No'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                  </>
+                )}
+                {isPharmacist(selectedUserForDocuments.role) && (
+                  <>
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Pharmacy Details</Typography>
+                    </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Registered Trading Name"
+                            value={selectedUserForDocuments.registeredTradingName || 'Not provided'}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Company Registration No."
+                            value={selectedUserForDocuments.companyRegistrationNo || 'Not provided'}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Business Email"
+                            value={selectedUserForDocuments.businessEmail || 'Not provided'}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Pharmacy Council No."
+                            value={selectedUserForDocuments.pharmacyCouncilNo || 'Not provided'}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Practice Number"
+                            value={selectedUserForDocuments.practiceNumber || 'Not provided'}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Settlement Cell Number"
+                            value={selectedUserForDocuments.settlementCellNumber || 'Not provided'}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="GPS Coordinates"
+                            value={
+                              selectedUserForDocuments.gpsCoordinates?.latitude != null &&
+                              selectedUserForDocuments.gpsCoordinates?.longitude != null
+                                ? `${selectedUserForDocuments.gpsCoordinates.latitude}, ${selectedUserForDocuments.gpsCoordinates.longitude}`
+                                : 'Not provided'
+                            }
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="HPCNA License Expiry Acknowledged"
+                            value={selectedUserForDocuments.hpcnaLicenseExpiryAcknowledged ? 'Yes' : 'No'}
+                            fullWidth
+                            InputProps={{ readOnly: true }}
+                            variant="outlined"
+                          />
+                        </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="HPCNA Number"
+                        value={selectedUserForDocuments.hpcnaNumber || 'Not provided'}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="HPCNA Expiry Date"
+                        value={selectedUserForDocuments.hpcnaExpiryDate ? new Date(selectedUserForDocuments.hpcnaExpiryDate).toLocaleDateString() : 'Not provided'}
                         fullWidth
                         InputProps={{ readOnly: true }}
                         variant="outlined"
@@ -1301,84 +1499,111 @@ export default function UserManagement() {
                     )}
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={6}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-                      Primary Qualification
-                    </Typography>
-                    {selectedUserForDocuments.primaryQualification ? (
-                      <Box
-                        component="img"
-                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.primaryQualification}`}
-                        alt="Primary Qualification"
-                        sx={{
-                          width: '100%',
-                          maxHeight: 400,
-                          objectFit: 'contain',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: 1,
-                          backgroundColor: '#f5f5f5',
-                          p: 1
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: 200,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: 2,
-                          border: '1px dashed #e0e0e0',
-                          backgroundColor: '#fafafa'
-                        }}
-                      >
-                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                {!isPharmacist(selectedUserForDocuments.role) && (
+                  <>
+                    <Grid item xs={12} sm={6} md={6}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                          Primary Qualification
+                        </Typography>
+                        {selectedUserForDocuments.primaryQualification ? (
+                          <Box
+                            component="img"
+                            src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.primaryQualification}`}
+                            alt="Primary Qualification"
+                            sx={{
+                              width: '100%',
+                              maxHeight: 400,
+                              objectFit: 'contain',
+                              borderRadius: 2,
+                              border: '1px solid #e0e0e0',
+                              boxShadow: 1,
+                              backgroundColor: '#f5f5f5',
+                              p: 1
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: 200,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: 2,
+                              border: '1px dashed #e0e0e0',
+                              backgroundColor: '#fafafa'
+                            }}
+                          >
+                            <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                          </Box>
+                        )}
                       </Box>
-                    )}
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={6}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-                      Annual Qualification
-                    </Typography>
-                    {selectedUserForDocuments.annualQualification ? (
-                      <Box
-                        component="img"
-                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.annualQualification}`}
-                        alt="Annual Qualification"
-                        sx={{
-                          width: '100%',
-                          maxHeight: 400,
-                          objectFit: 'contain',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: 1,
-                          backgroundColor: '#f5f5f5',
-                          p: 1
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: 200,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: 2,
-                          border: '1px dashed #e0e0e0',
-                          backgroundColor: '#fafafa'
-                        }}
-                      >
-                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                          Annual Qualification
+                        </Typography>
+                        {selectedUserForDocuments.annualQualification ? (
+                          <Box
+                            component="img"
+                            src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.annualQualification}`}
+                            alt="Annual Qualification"
+                            sx={{
+                              width: '100%',
+                              maxHeight: 400,
+                              objectFit: 'contain',
+                              borderRadius: 2,
+                              border: '1px solid #e0e0e0',
+                              boxShadow: 1,
+                              backgroundColor: '#f5f5f5',
+                              p: 1
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: 200,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: 2,
+                              border: '1px dashed #e0e0e0',
+                              backgroundColor: '#fafafa'
+                            }}
+                          >
+                            <Typography variant="body2" color="text.secondary">Not provided</Typography>
+                          </Box>
+                        )}
                       </Box>
-                    )}
-                  </Box>
-                </Grid>
+                    </Grid>
+                  </>
+                )}
+                {isPharmacist(selectedUserForDocuments.role) && (
+                  <>
+                    {[
+                      { label: 'HPCNA Certificate', field: 'hpcnaCertificate' },
+                      { label: 'Dispensing Certificate / Licence', field: 'dispensingCertificateLicence' },
+                      { label: 'Training Certificate', field: 'trainingCertificate' },
+                      { label: 'NQA Evaluation', field: 'NQAEvaluation' },
+                    ].map(({ label, field }) => (
+                      <Grid item xs={12} sm={6} md={6} key={field}>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                            {label}
+                          </Typography>
+                          <UploadedFilePreview
+                            filename={selectedUserForDocuments[field]}
+                            label={label}
+                            asPdf
+                          />
+                        </Box>
+                      </Grid>
+                    ))}
+                  </>
+                )}
                 </Grid>
               )}
             </>
