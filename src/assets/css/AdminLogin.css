@@ -154,6 +154,18 @@
   cursor: not-allowed;
 }
 
+.submit-button-green {
+  background-color: #009548;
+}
+
+.submit-button-green:hover {
+  background-color: #007a3a;
+}
+
+.submit-button-green:disabled {
+  background-color: #9ca3af;
+}
+
 .back-button {
   width: 100%;
   padding: 0.875rem;

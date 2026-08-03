@@ -1,55 +1,14 @@
 import React, { useState } from "react";
 import "../assets/css/AdminLogin.css";
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import fetchJSON from "../utils/fetchJSON";
 
 function SubmitEmail() {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setEmailError("");
-
-    if (validateForm()) {
-      try {
-          setIsSubmitting(true);
-          const response = await fetch("https://dt.mtc.com.na:4000/auth/admin/forgot-password", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email
-            }),
-          });
-  
-          const data = await response.json();
-  
-          if (response.ok) {
-              setIsSubmitting(false);
-              setEmail("");
-              toast.success(data.message);
-              
-          } else {
-            setIsSubmitting(false);
-            toast.error("Username not found in our database. Verify username and try again!");
-          }
-        } catch (error) {
-          setIsSubmitting(false);
-          toast.error(
-            "Network error. Please check your network connection and try again",
-            "Please check your network connection and try again"
-          );
-        }
-      
-    }
-  };
 
   const validateForm = () => {
     let valid = true;
@@ -62,17 +21,60 @@ function SubmitEmail() {
     }
     return valid;
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setEmailError("");
+
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      // Public endpoint — no auth token; usable by users who are not logged in
+      const accountCheck = await fetchJSON(
+        "https://apihealthconnect.kopanovertex.com/api/auth/check-account",
+        "POST",
+        { email }
+      );
+
+      if (!accountCheck.exists) {
+        toast.error(
+          accountCheck.message || "No account found with this email."
+        );
+        return;
+      }
+
+      const data = await fetchJSON(
+        "https://apihealthconnect.kopanovertex.com/auth/admin/forgot-password",
+        "POST",
+        { email }
+      );
+
+      setEmail("");
+      toast.success(
+        data.message ||
+          "Password reset instructions have been sent to your email."
+      );
+    } catch (error) {
+      toast.error(
+        error.message ||
+          "Network error. Please check your network connection and try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="login-container">
       <div className="login-wrapper-centered">
         <div className="login-form-section">
           <div className="login-form-wrapper">
-            
             <div className="login-card">
               <form onSubmit={handleSubmit} className="auth-form">
                 <h2>Reset Password</h2>
                 <p className="auth-subtitle">
-                  Enter your email address below. If we find your account, 
+                  Enter your email address below. If we find your account,
                   we'll send password reset instructions to your email.
                 </p>
 
@@ -93,8 +95,8 @@ function SubmitEmail() {
                   )}
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="submit-button"
                   disabled={isSubmitting}
                 >
@@ -107,10 +109,9 @@ function SubmitEmail() {
 
                 <button
                   type="button"
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate("/")}
                   className="back-button"
                 >
-                  {/* <ArrowBackIosNewIcon sx={{ fontSize: 16, marginRight: 1 }} /> */}
                   Back to Login
                 </button>
               </form>

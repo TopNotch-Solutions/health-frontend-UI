@@ -190,7 +190,7 @@ const AdminLogin = () => {
                   <button
                     type="button"
                     className="forgot-password"
-                    onClick={() => navigate("/Submit")}
+                    onClick={() => navigate("/submit")}
                   >
                     Forgot Password?
                   </button>
@@ -202,6 +202,14 @@ const AdminLogin = () => {
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? <div className="loader"></div> : "Sign in"}
+                </button>
+
+                <button
+                  type="button"
+                  className="back-button"
+                  onClick={() => navigate("/check-account")}
+                >
+                  Create an account
                 </button>
               </form>
             </div>

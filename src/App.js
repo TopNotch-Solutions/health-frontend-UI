@@ -24,6 +24,7 @@ import { useSelector } from "react-redux";
 import AdminRoute from "./AdminRoute";
 import SubmitEmail from "./pages/SubmitEmail";
 import ForgotPassword from "./pages/ForgotPassword";
+import CreateAccount from "./pages/CreateAccount";
 
 function App() {
   const [openSidebarToggle, setOpenSidebarToggle] = useState(false);
@@ -78,6 +79,7 @@ function App() {
                   </Route>
                   <Route path="/submit" element={<SubmitEmail />} />
                   <Route path="/reset-password" element={<ForgotPassword />} />
+                  <Route path="/check-account" element={<CreateAccount />} />
                 </Routes>
               </div>
             </div>
