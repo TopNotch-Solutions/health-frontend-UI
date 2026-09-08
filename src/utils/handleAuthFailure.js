@@ -5,6 +5,11 @@ import {toggleAuthenticationfalse} from "../redux/reducers/twoFactorReducer";
 
 const handleAuthFailure = ({dispatch, navigate, type}) => {
     if (type === 'auth') {
+      try {
+        localStorage.removeItem("token");
+      } catch (e) {
+        // ignore
+      }
       dispatch(toggleAuthenticationfalse());
       dispatch(toggleSidebarfalse());
       dispatch(login({ user: {} }));

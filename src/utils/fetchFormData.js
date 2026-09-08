@@ -1,9 +1,32 @@
+import { store } from "../redux/store";
+
+const getStoredToken = () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (token) return token;
+  } catch {
+    // ignore
+  }
+  try {
+    const stateToken = store?.getState?.()?.auth?.user?.token;
+    if (stateToken) return stateToken;
+  } catch {
+    // ignore
+  }
+  return null;
+};
+
 export const fetchFormData = async (url, method = "POST", formData, token = null) => {
   try {
     const headers = {};
 
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+    const authToken = token || getStoredToken();
+    if (authToken) {
+      const cleanToken = authToken.startsWith("Bearer ")
+        ? authToken.slice(7).trim()
+        : authToken.trim();
+      headers["Authorization"] = `Bearer ${cleanToken}`;
+      headers["x-access-token"] = `Bearer ${cleanToken}`;
     }
 
     const options = {

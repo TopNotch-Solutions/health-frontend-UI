@@ -62,6 +62,7 @@ const Topbar = ({ OpenSidebar }) => {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem("token");
       dispatch(toggleAuthenticationfalse());
       dispatch(toggleSidebarfalse());
       dispatch(
@@ -80,6 +81,7 @@ const Topbar = ({ OpenSidebar }) => {
     } catch (error) {
       console.error("Logout error:", error);
       // Still logout even if there's an error
+      localStorage.removeItem("token");
       dispatch(toggleAuthenticationfalse());
       dispatch(toggleSidebarfalse());
       dispatch(

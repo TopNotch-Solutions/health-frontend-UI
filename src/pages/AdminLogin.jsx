@@ -92,9 +92,16 @@ const AdminLogin = () => {
         if (response.status === true && response.user) {
           toast.success(response.message || "Login successful!");
           dispatch(toggleSidebarTrue());
+          const token = response.token;
+          if (token) {
+            localStorage.setItem("token", token);
+          }
           dispatch(
             login({
-              user: response.user,
+              user: {
+                ...response.user,
+                token: token,
+              },
             })
           );
           navigate("/Dashboard");
