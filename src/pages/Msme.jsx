@@ -49,6 +49,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../utils/usePermissions';
+import io from 'socket.io-client';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -206,6 +207,32 @@ export default function UserManagement() {
   // Fetch users from backend
   useEffect(() => {
     fetchUsers();
+  }, []);
+
+  // Live Online/Offline status from socket presence (userId in userSockets → Online)
+  useEffect(() => {
+    const applyPresence = (onlineUserIds) => {
+      const onlineSet = new Set((onlineUserIds || []).map(String));
+      setUsers((prev) =>
+        prev.map((user) => {
+          const userId = String(user._id || user.id);
+          const visibility = onlineSet.has(userId) ? 'Online' : 'Offline';
+          return user.visibility === visibility ? user : { ...user, visibility };
+        })
+      );
+    };
+
+    const newSocket = io('https://apihealthconnect.kopanovertex.com', {
+      transports: ['websocket', 'polling'],
+    });
+
+    newSocket.on('onlineUsersUpdate', (data) => {
+      applyPresence(data.onlineUserIds);
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
   const fetchUsers = async () => {
@@ -850,9 +877,9 @@ export default function UserManagement() {
                 <InputLabel>Visibility</InputLabel>
                 <Select
                   name="visibility"
-                  value={currentUser.visibility}
+                  value={currentUser.visibility || 'Offline'}
                   label="Visibility"
-                  onChange={handleChange}
+                  disabled
                 >
                   <MenuItem value="Online">Online</MenuItem>
                   <MenuItem value="Offline">Offline</MenuItem>

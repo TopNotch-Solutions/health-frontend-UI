@@ -210,14 +210,6 @@ const AdminLogin = () => {
                 >
                   {isSubmitting ? <div className="loader"></div> : "Sign in"}
                 </button>
-
-                <button
-                  type="button"
-                  className="back-button"
-                  onClick={() => navigate("/check-account")}
-                >
-                  Create an account
-                </button>
               </form>
             </div>
           </div>
