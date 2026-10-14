@@ -6,8 +6,8 @@ const useFetch = () => {
   const [error, setError] = useState(null);
 
   const request = useCallback(async (url, method = 'GET', body = null, headers = {}) => {
-    //const baseURL = 'https://apihealthconnect.kopanovertex.com/api';
-    const baseURL = 'https://apihealthconnect.kopanovertex.com';
+    //const baseURL = 'http://localhost:4000/api';
+    const baseURL = 'http://localhost:4000';
     const fullURL = `${baseURL}${url}`;
 
     setLoading(true);

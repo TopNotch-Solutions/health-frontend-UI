@@ -35,13 +35,29 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import HealingIcon from '@mui/icons-material/Healing';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import fetchJSON from '../utils/fetchJSON';
 import { fetchFormData } from '../utils/fetchFormData';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
 
-const API_BASE = 'https://apihealthconnect.kopanovertex.com';
+const API_BASE = 'http://localhost:4000';
+
+const emptyIcd10 = () => ({
+  id: null,
+  ICD_10_code: '',
+  price: '',
+  specializations: [],
+  alignments: [],
+});
+
+const emptyMedicalAid = () => ({
+  id: null,
+  title: '',
+  image: '',
+});
 
 const PACKAGE_PROVIDERS = [
   { value: 'doctor', label: 'Doctor' },
@@ -66,8 +82,16 @@ export default function Ailment() {
   const [packages, setPackages] = useState([]);
   const [filteredPackages, setFilteredPackages] = useState([]);
   const [packageCount, setPackageCount] = useState(0);
+  const [icd10Codes, setIcd10Codes] = useState([]);
+  const [filteredIcd10Codes, setFilteredIcd10Codes] = useState([]);
+  const [icd10Count, setIcd10Count] = useState(0);
+  const [medicalAids, setMedicalAids] = useState([]);
+  const [filteredMedicalAids, setFilteredMedicalAids] = useState([]);
+  const [medicalAidCount, setMedicalAidCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPackageQuery, setSearchPackageQuery] = useState('');
+  const [searchIcd10Query, setSearchIcd10Query] = useState('');
+  const [searchMedicalAidQuery, setSearchMedicalAidQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [packageDialogOpen, setPackageDialogOpen] = useState(false);
   const [isPackageEdit, setIsPackageEdit] = useState(false);
@@ -77,6 +101,13 @@ export default function Ailment() {
     amount: '',
     consultations: '',
   });
+  const [icd10DialogOpen, setIcd10DialogOpen] = useState(false);
+  const [isIcd10Edit, setIsIcd10Edit] = useState(false);
+  const [currentIcd10, setCurrentIcd10] = useState(emptyIcd10());
+  const [medicalAidDialogOpen, setMedicalAidDialogOpen] = useState(false);
+  const [isMedicalAidEdit, setIsMedicalAidEdit] = useState(false);
+  const [currentMedicalAid, setCurrentMedicalAid] = useState(emptyMedicalAid());
+  const [medicalAidImageFile, setMedicalAidImageFile] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [currentAilment, setCurrentAilment] = useState({
@@ -133,16 +164,54 @@ export default function Ailment() {
   }, [packages, searchPackageQuery]);
 
   useEffect(() => {
-    if (viewMode !== 'packages') return;
-    fetchPackages();
-    fetchPackageCount();
+    let filtered = icd10Codes;
+    if (searchIcd10Query) {
+      const q = searchIcd10Query.toLowerCase();
+      filtered = icd10Codes.filter((row) => {
+        const code = row.ICD_10_code?.toLowerCase() ?? '';
+        const price = String(row.price ?? '');
+        const specs = row.specializationLabel?.toLowerCase() ?? '';
+        const aligns = row.alignmentLabel?.toLowerCase() ?? '';
+        return (
+          code.includes(q) ||
+          price.includes(q) ||
+          specs.includes(q) ||
+          aligns.includes(q)
+        );
+      });
+    }
+    setFilteredIcd10Codes(filtered);
+  }, [icd10Codes, searchIcd10Query]);
+
+  useEffect(() => {
+    let filtered = medicalAids;
+    if (searchMedicalAidQuery) {
+      const q = searchMedicalAidQuery.toLowerCase();
+      filtered = medicalAids.filter((row) =>
+        (row.title?.toLowerCase() ?? '').includes(q)
+      );
+    }
+    setFilteredMedicalAids(filtered);
+  }, [medicalAids, searchMedicalAidQuery]);
+
+  useEffect(() => {
+    if (viewMode === 'packages') {
+      fetchPackages();
+      fetchPackageCount();
+    } else if (viewMode === 'icd10') {
+      fetchIcd10Codes();
+      fetchIcd10Count();
+    } else if (viewMode === 'medicalAid') {
+      fetchMedicalAids();
+      fetchMedicalAidCount();
+    }
   }, [viewMode]);
 
   const fetchAilments = async () => {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "https://apihealthconnect.kopanovertex.com/api/portal/aligment/all-alignments",
+        "http://localhost:4000/api/portal/aligment/all-alignments",
         "GET"
       );
       if (response.ailments) {
@@ -199,7 +268,7 @@ export default function Ailment() {
   const fetchSpecializations = async () => {
     try {
       const response = await fetchJSON(
-        "https://apihealthconnect.kopanovertex.com/api/portal/specialization/all-specializations",
+        "http://localhost:4000/api/portal/specialization/all-specializations",
         "GET"
       );
       if (response.specializations) {
@@ -387,6 +456,399 @@ export default function Ailment() {
     }
   };
 
+  const fetchIcd10Count = async () => {
+    try {
+      const response = await fetchJSON(`${API_BASE}/api/portal/icd10/count`, 'GET');
+      setIcd10Count(typeof response.count === 'number' ? response.count : 0);
+    } catch (error) {
+      console.error('Error fetching ICD-10 count:', error);
+      toast.error('Failed to load ICD-10 count.');
+    }
+  };
+
+  const fetchIcd10Codes = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetchJSON(`${API_BASE}/api/portal/icd10/all`, 'GET');
+      const raw = Array.isArray(response)
+        ? response
+        : response?.data ?? response?.icd10 ?? [];
+      const formatted = raw.map((item) => {
+        const specs = Array.isArray(item.specializations) ? item.specializations : [];
+        const aligns = Array.isArray(item.alignments) ? item.alignments : [];
+        return {
+          id: item._id || item.id,
+          ICD_10_code: item.ICD_10_code || '',
+          price:
+            item.price !== undefined && item.price !== null ? item.price : null,
+          specializationLabel: specs
+            .map((s) => (typeof s === 'object' ? s.title : s))
+            .filter(Boolean)
+            .join(', '),
+          alignmentLabel: aligns
+            .map((a) => (typeof a === 'object' ? a.title : a))
+            .filter(Boolean)
+            .join(', '),
+          specializationIds: specs
+            .map((s) => (typeof s === 'object' ? s._id : s))
+            .filter(Boolean)
+            .map(String),
+          alignmentIds: aligns
+            .map((a) => (typeof a === 'object' ? a._id : a))
+            .filter(Boolean)
+            .map(String),
+        };
+      });
+      setIcd10Codes(formatted);
+      setFilteredIcd10Codes(formatted);
+    } catch (error) {
+      console.error('Error fetching ICD-10 codes:', error);
+      toast.error('Failed to load ICD-10 codes. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenIcd10Dialog = (row = null) => {
+    if (row != null && row.id != null && row.id !== '') {
+      setIsIcd10Edit(true);
+      setCurrentIcd10({
+        id: row.id,
+        ICD_10_code: row.ICD_10_code || '',
+        price:
+          row.price !== null && row.price !== undefined ? String(row.price) : '',
+        specializations: Array.isArray(row.specializationIds)
+          ? row.specializationIds
+          : [],
+        alignments: Array.isArray(row.alignmentIds) ? row.alignmentIds : [],
+      });
+    } else {
+      setIsIcd10Edit(false);
+      setCurrentIcd10(emptyIcd10());
+    }
+    setIcd10DialogOpen(true);
+  };
+
+  const handleCloseIcd10Dialog = () => {
+    setIcd10DialogOpen(false);
+    setIsIcd10Edit(false);
+    setCurrentIcd10(emptyIcd10());
+  };
+
+  const handleSubmitIcd10 = async () => {
+    if (!currentIcd10.ICD_10_code || !String(currentIcd10.ICD_10_code).trim()) {
+      setSnackbarMessage('ICD-10 code is required.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    const priceNum = parseFloat(currentIcd10.price);
+    if (
+      currentIcd10.price === '' ||
+      currentIcd10.price == null ||
+      isNaN(priceNum) ||
+      priceNum < 0
+    ) {
+      setSnackbarMessage('Price is required and must be a valid non-negative number.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (
+      !Array.isArray(currentIcd10.specializations) ||
+      currentIcd10.specializations.length === 0
+    ) {
+      setSnackbarMessage('Please select at least one specialization.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (
+      !Array.isArray(currentIcd10.alignments) ||
+      currentIcd10.alignments.length === 0
+    ) {
+      setSnackbarMessage('Please select at least one alignment (ailment).');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const body = {
+        ICD_10_code: String(currentIcd10.ICD_10_code).trim(),
+        price: priceNum,
+        specializations: currentIcd10.specializations,
+        alignments: currentIcd10.alignments,
+      };
+      if (isIcd10Edit) {
+        await fetchJSON(
+          `${API_BASE}/api/portal/icd10/update/${currentIcd10.id}`,
+          'PUT',
+          body
+        );
+        setSnackbarMessage('ICD-10 code updated successfully.');
+      } else {
+        await fetchJSON(`${API_BASE}/api/portal/icd10/create`, 'POST', body);
+        setSnackbarMessage('ICD-10 code created successfully.');
+      }
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      handleCloseIcd10Dialog();
+      await fetchIcd10Codes();
+      await fetchIcd10Count();
+    } catch (error) {
+      setSnackbarMessage(
+        error.message ||
+          (isIcd10Edit
+            ? 'Failed to update ICD-10 code.'
+            : 'Failed to create ICD-10 code.')
+      );
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleDeleteIcd10 = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this ICD-10 code?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetchJSON(`${API_BASE}/api/portal/icd10/delete/${id}`, 'DELETE');
+        setSnackbarMessage('ICD-10 code deleted successfully.');
+        setSnackbarSeverity('success');
+        await fetchIcd10Codes();
+        await fetchIcd10Count();
+        setSnackbarOpen(true);
+      } catch (error) {
+        setSnackbarMessage(error.message || 'Failed to delete ICD-10 code.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
+  const fetchMedicalAidCount = async () => {
+    try {
+      const response = await fetchJSON(
+        `${API_BASE}/api/portal/medical-aid/count`,
+        'GET'
+      );
+      setMedicalAidCount(typeof response.count === 'number' ? response.count : 0);
+    } catch (error) {
+      console.error('Error fetching medical aid count:', error);
+      toast.error('Failed to load medical aid count.');
+    }
+  };
+
+  const fetchMedicalAids = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetchJSON(
+        `${API_BASE}/api/portal/medical-aid/all`,
+        'GET'
+      );
+      const raw = Array.isArray(response)
+        ? response
+        : response?.data ?? response?.medicalAids ?? [];
+      const formatted = raw.map((item) => ({
+        id: item._id || item.id,
+        title: item.title || '',
+        image: item.image || '',
+      }));
+      setMedicalAids(formatted);
+      setFilteredMedicalAids(formatted);
+    } catch (error) {
+      console.error('Error fetching medical aids:', error);
+      toast.error('Failed to load medical aids. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenMedicalAidDialog = (row = null) => {
+    if (row != null && row.id != null && row.id !== '') {
+      setIsMedicalAidEdit(true);
+      setCurrentMedicalAid({
+        id: row.id,
+        title: row.title || '',
+        image: row.image || '',
+      });
+    } else {
+      setIsMedicalAidEdit(false);
+      setCurrentMedicalAid(emptyMedicalAid());
+    }
+    setMedicalAidImageFile(null);
+    setMedicalAidDialogOpen(true);
+  };
+
+  const handleCloseMedicalAidDialog = () => {
+    setMedicalAidDialogOpen(false);
+    setIsMedicalAidEdit(false);
+    setCurrentMedicalAid(emptyMedicalAid());
+    setMedicalAidImageFile(null);
+  };
+
+  const uploadMedicalAidImage = async (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await fetchFormData(
+      `${API_BASE}/api/portal/medical-aid/upload-image/${id}`,
+      'PATCH',
+      formData
+    );
+    return response;
+  };
+
+  const handleSubmitMedicalAid = async () => {
+    if (!currentMedicalAid.title || !String(currentMedicalAid.title).trim()) {
+      setSnackbarMessage('Title is required.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const body = { title: String(currentMedicalAid.title).trim() };
+      if (isMedicalAidEdit) {
+        await fetchJSON(
+          `${API_BASE}/api/portal/medical-aid/update/${currentMedicalAid.id}`,
+          'PUT',
+          body
+        );
+        if (medicalAidImageFile) {
+          await uploadMedicalAidImage(currentMedicalAid.id, medicalAidImageFile);
+        }
+        setSnackbarMessage('Medical aid updated successfully.');
+      } else {
+        const created = await fetchJSON(
+          `${API_BASE}/api/portal/medical-aid/create`,
+          'POST',
+          body
+        );
+        const createdId = created?.data?._id || created?.data?.id;
+        if (medicalAidImageFile && createdId) {
+          await uploadMedicalAidImage(createdId, medicalAidImageFile);
+        }
+        setSnackbarMessage('Medical aid created successfully.');
+      }
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      handleCloseMedicalAidDialog();
+      await fetchMedicalAids();
+      await fetchMedicalAidCount();
+    } catch (error) {
+      setSnackbarMessage(
+        error.message ||
+          (isMedicalAidEdit
+            ? 'Failed to update medical aid.'
+            : 'Failed to create medical aid.')
+      );
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleUpdateMedicalAidImage = async () => {
+    if (!medicalAidImageFile || !currentMedicalAid.id) {
+      setSnackbarMessage('Please select an image.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const response = await uploadMedicalAidImage(
+        currentMedicalAid.id,
+        medicalAidImageFile
+      );
+      const updatedImage = response?.data?.image || '';
+      setCurrentMedicalAid((prev) => ({ ...prev, image: updatedImage }));
+      setMedicalAidImageFile(null);
+      setSnackbarMessage(response?.message || 'Medical aid image updated successfully.');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      await fetchMedicalAids();
+    } catch (error) {
+      setSnackbarMessage(error.message || 'Failed to update medical aid image.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleDeleteMedicalAidImage = async () => {
+    if (!currentMedicalAid.id) return;
+
+    const result = await Swal.fire({
+      title: 'Delete image?',
+      text: 'This will remove the medical aid image.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await fetchJSON(
+        `${API_BASE}/api/portal/medical-aid/delete-image/${currentMedicalAid.id}`,
+        'DELETE'
+      );
+      setCurrentMedicalAid((prev) => ({ ...prev, image: '' }));
+      setMedicalAidImageFile(null);
+      setSnackbarMessage('Medical aid image deleted successfully.');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      await fetchMedicalAids();
+    } catch (error) {
+      setSnackbarMessage(error.message || 'Failed to delete medical aid image.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleDeleteMedicalAid = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this medical aid?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetchJSON(
+          `${API_BASE}/api/portal/medical-aid/delete/${id}`,
+          'DELETE'
+        );
+        setSnackbarMessage('Medical aid deleted successfully.');
+        setSnackbarSeverity('success');
+        await fetchMedicalAids();
+        await fetchMedicalAidCount();
+        setSnackbarOpen(true);
+      } catch (error) {
+        setSnackbarMessage(error.message || 'Failed to delete medical aid.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
   const handleOpenDialog = (ailment = null) => {
     if (ailment) {
       setIsEdit(true);
@@ -471,7 +933,7 @@ export default function Ailment() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `https://apihealthconnect.kopanovertex.com/api/portal/aligment/update-alignment/${currentAilment.id}`,
+          `http://localhost:4000/api/portal/aligment/update-alignment/${currentAilment.id}`,
           "PUT",
           {
             title: currentAilment.title,
@@ -511,7 +973,7 @@ export default function Ailment() {
         formData.append('image', imageFile);
 
         const response = await fetchFormData(
-          "https://apihealthconnect.kopanovertex.com/api/portal/aligment/create-alignment",
+          "http://localhost:4000/api/portal/aligment/create-alignment",
           "POST",
           formData
         );
@@ -546,7 +1008,7 @@ export default function Ailment() {
     if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
-          `https://apihealthconnect.kopanovertex.com/api/portal/aligment/delete-alignment/${id}`,
+          `http://localhost:4000/api/portal/aligment/delete-alignment/${id}`,
           "DELETE"
         );
         if (response.message) {
@@ -576,7 +1038,7 @@ export default function Ailment() {
 
     try {
       const response = await fetchFormData(
-        `https://apihealthconnect.kopanovertex.com/api/portal/aligment/update-ailment-image/${currentAilment.id}`,
+        `http://localhost:4000/api/portal/aligment/update-ailment-image/${currentAilment.id}`,
         "PUT",
         formData
       );
@@ -761,16 +1223,176 @@ export default function Ailment() {
     },
   ];
 
+  const icd10Columns = [
+    { field: 'ICD_10_code', headerName: 'ICD-10 Code', width: 160 },
+    {
+      field: 'price',
+      headerName: 'Price',
+      width: 140,
+      renderCell: (params) => {
+        const value = params.value;
+        if (value === undefined || value === null || value === '') {
+          return '—';
+        }
+        const numValue = typeof value === 'number' ? value : parseFloat(value);
+        if (isNaN(numValue)) {
+          return '—';
+        }
+        return `N$${numValue.toFixed(2)}`;
+      },
+    },
+    {
+      field: 'specializationLabel',
+      headerName: 'Specializations',
+      flex: 1,
+      minWidth: 200,
+    },
+    {
+      field: 'alignmentLabel',
+      headerName: 'Alignments',
+      flex: 1,
+      minWidth: 200,
+    },
+    {
+      field: 'icd10Actions',
+      headerName: 'Actions',
+      width: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          {canWrite && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenIcd10Dialog(params.row);
+              }}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteIcd10(params.row.id);
+              }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+      ),
+    },
+  ];
+
+  const medicalAidColumns = [
+    {
+      field: 'image',
+      headerName: 'Image',
+      width: 100,
+      sortable: false,
+      renderCell: (params) =>
+        params.value ? (
+          <Box
+            component="img"
+            src={`${API_BASE}/images/${params.value}`}
+            alt={params.row.title || 'Medical aid'}
+            sx={{
+              width: 40,
+              height: 40,
+              objectFit: 'cover',
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            —
+          </Typography>
+        ),
+    },
+    { field: 'title', headerName: 'Title', flex: 1, minWidth: 280 },
+    {
+      field: 'medicalAidActions',
+      headerName: 'Actions',
+      width: 120,
+      sortable: false,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          {canWrite && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenMedicalAidDialog(params.row);
+              }}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+          {canDelete && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteMedicalAid(params.row.id);
+              }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+      ),
+    },
+  ];
+
+  const pageMeta = {
+    ailments: {
+      title: 'Ailments',
+      subtitle: 'Manage all medical ailments and conditions.',
+      count: ailments.length,
+      label: 'Total Ailments',
+    },
+    packages: {
+      title: 'Packages',
+      subtitle: 'Manage health packages.',
+      count: packageCount,
+      label: 'Total Packages',
+    },
+    icd10: {
+      title: 'ICD-10 Codes',
+      subtitle:
+        'Manage ICD-10 codes with price, specializations, and alignments.',
+      count: icd10Count,
+      label: 'Total ICD-10 Codes',
+    },
+    medicalAid: {
+      title: 'Medical Aid',
+      subtitle: 'Manage medical aid providers and their logos.',
+      count: medicalAidCount,
+      label: 'Total Medical Aids',
+    },
+  };
+  const pageTitle = pageMeta[viewMode]?.title ?? 'Ailments';
+  const pageSubtitle = pageMeta[viewMode]?.subtitle ?? '';
+  const statsCount = pageMeta[viewMode]?.count ?? 0;
+  const statsLabel = pageMeta[viewMode]?.label ?? '';
+
   return (
     <Grid container spacing={4} sx={{ p: { xs: 2, md: 4 } }}>
       <Grid item xs={12}>
         <Typography variant="h4" gutterBottom>
-          {viewMode === 'ailments' ? 'Ailments' : 'Packages'}
+          {pageTitle}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-          {viewMode === 'ailments'
-            ? 'Manage all medical ailments and conditions.'
-            : 'Manage health packages.'}
+          {pageSubtitle}
         </Typography>
         <Box
           sx={{
@@ -785,7 +1407,7 @@ export default function Ailment() {
             value={viewMode}
             onChange={(e, v) => setViewMode(v)}
             variant="fullWidth"
-            aria-label="Switch between ailments and packages"
+            aria-label="Switch between ailments, packages, ICD-10 codes, and medical aid"
             sx={{
               minHeight: 48,
               '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 48 },
@@ -793,6 +1415,8 @@ export default function Ailment() {
           >
             <Tab label="Ailments" value="ailments" />
             <Tab label="Packages" value="packages" />
+            <Tab label="ICD-10 Codes" value="icd10" />
+            <Tab label="Medical Aid" value="medicalAid" />
           </Tabs>
         </Box>
       </Grid>
@@ -804,15 +1428,19 @@ export default function Ailment() {
             <Stack direction="row" alignItems="center" spacing={2}>
               {viewMode === 'ailments' ? (
                 <HealingIcon color="primary" fontSize="large" />
-              ) : (
+              ) : viewMode === 'packages' ? (
                 <Inventory2Icon color="primary" fontSize="large" />
+              ) : viewMode === 'icd10' ? (
+                <LocalHospitalIcon color="primary" fontSize="large" />
+              ) : (
+                <HealthAndSafetyIcon color="primary" fontSize="large" />
               )}
               <Box>
                 <Typography variant="h4" component="div">
-                  {viewMode === 'ailments' ? ailments.length : packageCount}
+                  {statsCount}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {viewMode === 'ailments' ? 'Total Ailments' : 'Total Packages'}
+                  {statsLabel}
                 </Typography>
               </Box>
             </Stack>
@@ -823,7 +1451,7 @@ export default function Ailment() {
       <Grid item xs={12}>
         <Card>
           <CardContent>
-            {viewMode === 'ailments' ? (
+            {viewMode === 'ailments' && (
               <>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                   <Typography variant="h5">All Ailments</Typography>
@@ -870,7 +1498,9 @@ export default function Ailment() {
                   )}
                 </Box>
               </>
-            ) : (
+            )}
+
+            {viewMode === 'packages' && (
               <>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                   <Typography variant="h5">All Packages</Typography>
@@ -918,6 +1548,104 @@ export default function Ailment() {
                 </Box>
               </>
             )}
+
+            {viewMode === 'icd10' && (
+              <>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                  <Typography variant="h5">All ICD-10 Codes</Typography>
+                  {canWrite && (
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenIcd10Dialog()}
+                    >
+                      Add ICD-10 Code
+                    </Button>
+                  )}
+                </Stack>
+
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Search ICD-10 codes"
+                    variant="outlined"
+                    value={searchIcd10Query}
+                    onChange={(e) => setSearchIcd10Query(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <IconButton sx={{ pr: 1, color: 'text.secondary' }}>
+                          <SearchIcon />
+                        </IconButton>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                <Box sx={{ height: 600, width: '100%' }}>
+                  {isLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : (
+                    <DataGrid
+                      rows={filteredIcd10Codes}
+                      columns={icd10Columns}
+                      getRowId={(row) => row.id}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                  )}
+                </Box>
+              </>
+            )}
+
+            {viewMode === 'medicalAid' && (
+              <>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                  <Typography variant="h5">All Medical Aids</Typography>
+                  {canWrite && (
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenMedicalAidDialog()}
+                    >
+                      Add Medical Aid
+                    </Button>
+                  )}
+                </Stack>
+
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Search medical aids"
+                    variant="outlined"
+                    value={searchMedicalAidQuery}
+                    onChange={(e) => setSearchMedicalAidQuery(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <IconButton sx={{ pr: 1, color: 'text.secondary' }}>
+                          <SearchIcon />
+                        </IconButton>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                <Box sx={{ height: 600, width: '100%' }}>
+                  {isLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : (
+                    <DataGrid
+                      rows={filteredMedicalAids}
+                      columns={medicalAidColumns}
+                      getRowId={(row) => row.id}
+                      pageSizeOptions={[25, 50, 100]}
+                    />
+                  )}
+                </Box>
+              </>
+            )}
           </CardContent>
         </Card>
       </Grid>
@@ -933,7 +1661,7 @@ export default function Ailment() {
                 </Typography>
                 <Box
                   component="img"
-                  src={`https://apihealthconnect.kopanovertex.com/ailments/${currentAilment.image}`}
+                  src={`http://localhost:4000/ailments/${currentAilment.image}`}
                   alt={currentAilment.title}
                   sx={{
                     maxWidth: '100%',
@@ -1172,6 +1900,273 @@ export default function Ailment() {
           <Button onClick={handleClosePackageDialog}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmitPackage}>
             {isPackageEdit ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={icd10DialogOpen} onClose={handleCloseIcd10Dialog} maxWidth="sm" fullWidth>
+        <DialogTitle>{isIcd10Edit ? 'Edit ICD-10 Code' : 'Add ICD-10 Code'}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="ICD-10 Code"
+              fullWidth
+              required
+              value={currentIcd10.ICD_10_code}
+              onChange={(e) =>
+                setCurrentIcd10({ ...currentIcd10, ICD_10_code: e.target.value })
+              }
+              placeholder="e.g. J06.9"
+            />
+            <TextField
+              label="Price"
+              fullWidth
+              type="number"
+              required
+              value={currentIcd10.price}
+              onChange={(e) => setCurrentIcd10({ ...currentIcd10, price: e.target.value })}
+              inputProps={{ step: '0.01', min: '0' }}
+            />
+            <FormControl fullWidth required component="fieldset">
+              <FormLabel component="legend" sx={{ mb: 1 }}>
+                Specializations
+              </FormLabel>
+              <Box
+                sx={{
+                  maxHeight: 220,
+                  overflowY: 'auto',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  p: 2,
+                }}
+              >
+                <Grid container spacing={1}>
+                  {specializations.map((spec) => (
+                    <Grid item xs={12} sm={6} key={spec._id}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={
+                              Array.isArray(currentIcd10.specializations) &&
+                              currentIcd10.specializations
+                                .map(String)
+                                .includes(String(spec._id))
+                            }
+                            onChange={(e) => {
+                              const specId = String(spec._id);
+                              const currentSpecs = Array.isArray(
+                                currentIcd10.specializations
+                              )
+                                ? currentIcd10.specializations.map(String)
+                                : [];
+                              const next = e.target.checked
+                                ? [...currentSpecs, specId]
+                                : currentSpecs.filter((id) => id !== specId);
+                              setCurrentIcd10({
+                                ...currentIcd10,
+                                specializations: next,
+                              });
+                            }}
+                            size="small"
+                          />
+                        }
+                        label={spec.title}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </FormControl>
+            <FormControl fullWidth required component="fieldset">
+              <FormLabel component="legend" sx={{ mb: 1 }}>
+                Alignments (Ailments)
+              </FormLabel>
+              <Box
+                sx={{
+                  maxHeight: 220,
+                  overflowY: 'auto',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  p: 2,
+                }}
+              >
+                <Grid container spacing={1}>
+                  {ailments.map((ailment) => (
+                    <Grid item xs={12} sm={6} key={ailment.id}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={
+                              Array.isArray(currentIcd10.alignments) &&
+                              currentIcd10.alignments
+                                .map(String)
+                                .includes(String(ailment.id))
+                            }
+                            onChange={(e) => {
+                              const alignmentId = String(ailment.id);
+                              const currentAligns = Array.isArray(
+                                currentIcd10.alignments
+                              )
+                                ? currentIcd10.alignments.map(String)
+                                : [];
+                              const next = e.target.checked
+                                ? [...currentAligns, alignmentId]
+                                : currentAligns.filter((id) => id !== alignmentId);
+                              setCurrentIcd10({
+                                ...currentIcd10,
+                                alignments: next,
+                              });
+                            }}
+                            size="small"
+                          />
+                        }
+                        label={ailment.title}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseIcd10Dialog}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitIcd10}>
+            {isIcd10Edit ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={medicalAidDialogOpen}
+        onClose={handleCloseMedicalAidDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {isMedicalAidEdit ? 'Edit Medical Aid' : 'Add Medical Aid'}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {isMedicalAidEdit && currentMedicalAid.image && (
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Current Image
+                </Typography>
+                <Box
+                  component="img"
+                  src={`${API_BASE}/images/${currentMedicalAid.image}`}
+                  alt={currentMedicalAid.title || 'Medical aid'}
+                  sx={{
+                    maxWidth: '100%',
+                    maxHeight: 160,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                />
+              </Box>
+            )}
+            <TextField
+              label="Title"
+              fullWidth
+              required
+              value={currentMedicalAid.title}
+              onChange={(e) =>
+                setCurrentMedicalAid({
+                  ...currentMedicalAid,
+                  title: e.target.value,
+                })
+              }
+              placeholder="e.g. Nammed"
+            />
+            {!isMedicalAidEdit && (
+              <>
+                <Button variant="outlined" component="label">
+                  Choose Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files && e.target.files[0];
+                      if (!file) return;
+                      if (!file.type.startsWith('image/')) {
+                        setSnackbarMessage('Only image files are allowed.');
+                        setSnackbarSeverity('error');
+                        setSnackbarOpen(true);
+                        e.target.value = null;
+                        return;
+                      }
+                      setMedicalAidImageFile(file);
+                    }}
+                  />
+                </Button>
+                {medicalAidImageFile && (
+                  <Typography variant="body2" color="text.secondary">
+                    Selected image: {medicalAidImageFile.name}
+                  </Typography>
+                )}
+              </>
+            )}
+            {isMedicalAidEdit && (
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Change Image
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Button variant="outlined" component="label">
+                    Choose New Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files && e.target.files[0];
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                          setSnackbarMessage('Only image files are allowed.');
+                          setSnackbarSeverity('error');
+                          setSnackbarOpen(true);
+                          e.target.value = null;
+                          return;
+                        }
+                        setMedicalAidImageFile(file);
+                      }}
+                    />
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleUpdateMedicalAidImage}
+                    disabled={!medicalAidImageFile}
+                  >
+                    Update Image
+                  </Button>
+                  {currentMedicalAid.image && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={handleDeleteMedicalAidImage}
+                    >
+                      Delete Image
+                    </Button>
+                  )}
+                </Stack>
+                {medicalAidImageFile && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Selected image: {medicalAidImageFile.name}
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMedicalAidDialog}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitMedicalAid}>
+            {isMedicalAidEdit ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>

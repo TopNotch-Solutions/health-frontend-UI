@@ -72,7 +72,7 @@ export default function Specialization() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "https://apihealthconnect.kopanovertex.com/api/portal/specialization/all-specializations",
+        "http://localhost:4000/api/portal/specialization/all-specializations",
         "GET"
       );
       if (response.specializations) {
@@ -122,7 +122,7 @@ export default function Specialization() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `https://apihealthconnect.kopanovertex.com/api/portal/specialization/update-specialization/${currentSpecialization.id}`,
+          `http://localhost:4000/api/portal/specialization/update-specialization/${currentSpecialization.id}`,
           "PUT",
           {
             title: currentSpecialization.title,
@@ -137,7 +137,7 @@ export default function Specialization() {
         }
       } else {
         const response = await fetchJSON(
-          "https://apihealthconnect.kopanovertex.com/api/portal/specialization/add-new-specialization",
+          "http://localhost:4000/api/portal/specialization/add-new-specialization",
           "POST",
           {
             title: currentSpecialization.title,
@@ -175,7 +175,7 @@ export default function Specialization() {
     if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
-          `https://apihealthconnect.kopanovertex.com/api/portal/specialization/delete-specialization/${id}`,
+          `http://localhost:4000/api/portal/specialization/delete-specialization/${id}`,
           "DELETE"
         );
         if (response.message) {

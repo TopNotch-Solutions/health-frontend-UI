@@ -65,7 +65,7 @@ export default function FAQ() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "https://apihealthconnect.kopanovertex.com/api/portal/faq/all-faq",
+        "http://localhost:4000/api/portal/faq/all-faq",
         "GET"
       );
       if (response.faqs) {
@@ -111,7 +111,7 @@ export default function FAQ() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `https://apihealthconnect.kopanovertex.com/api/portal/faq/update-faq/${currentFAQ.id}`,
+          `http://localhost:4000/api/portal/faq/update-faq/${currentFAQ.id}`,
           "PUT",
           {
             question: currentFAQ.question,
@@ -125,7 +125,7 @@ export default function FAQ() {
         }
       } else {
         const response = await fetchJSON(
-          "https://apihealthconnect.kopanovertex.com/api/portal/faq/create-faq",
+          "http://localhost:4000/api/portal/faq/create-faq",
           "POST",
           {
             question: currentFAQ.question,
@@ -162,7 +162,7 @@ export default function FAQ() {
     if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
-          `https://apihealthconnect.kopanovertex.com/api/portal/faq/delete-faq/${id}`,
+          `http://localhost:4000/api/portal/faq/delete-faq/${id}`,
           "DELETE"
         );
         if (response.message) {

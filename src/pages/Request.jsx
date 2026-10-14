@@ -46,7 +46,7 @@ import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import io from 'socket.io-client';
 
-const API_FILES_BASE = 'https://apihealthconnect.kopanovertex.com/images/';
+const API_FILES_BASE = 'http://localhost:4000/images/';
 const BRAND = '#1674BB';
 
 const formatDate = (value) => {
@@ -242,7 +242,7 @@ export default function Request() {
     fetchRequestStats();
 
     // Initialize socket connection
-    const newSocket = io('https://apihealthconnect.kopanovertex.com', {
+    const newSocket = io('http://localhost:4000', {
       transports: ['websocket', 'polling'],
     });
 
@@ -283,7 +283,7 @@ export default function Request() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        'https://apihealthconnect.kopanovertex.com/api/portal/request/stats',
+        'http://localhost:4000/api/portal/request/stats',
         'GET'
       );
 
@@ -345,7 +345,7 @@ export default function Request() {
     setSelectedRequest(null);
     try {
       const response = await fetchJSON(
-        `https://apihealthconnect.kopanovertex.com/api/portal/request/${requestId}`,
+        `http://localhost:4000/api/portal/request/${requestId}`,
         'GET'
       );
       if (response.status && response.request) {
@@ -1107,6 +1107,32 @@ export default function Request() {
                       <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1', md: '1 / -1' } }}>
                         <MetaItem label="Visit Address" value={patientAddress} />
                       </Box>
+                      {selectedRequest.paymentMethod === 'medical_aid' && (
+                        <>
+                          <MetaItem
+                            label="Medical Aid"
+                            value={selectedRequest.medicalAidDetails?.medicalAidTitle}
+                          />
+                          <MetaItem
+                            label="MAF / Membership No."
+                            value={selectedRequest.medicalAidDetails?.membershipNumber}
+                          />
+                          <MetaItem
+                            label="Main Member Name"
+                            value={selectedRequest.medicalAidDetails?.mainMemberName}
+                          />
+                          <MetaItem
+                            label="ICD-10 Code"
+                            value={selectedRequest.medicalAidDetails?.icd10Code}
+                          />
+                          <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1', md: '1 / -1' } }}>
+                            <MetaItem
+                              label="Patient Residential Address"
+                              value={selectedRequest.medicalAidDetails?.residentialAddress}
+                            />
+                          </Box>
+                        </>
+                      )}
                       {ailment?.description && (
                         <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1', md: '1 / -1' } }}>
                           <MetaItem label="Description" value={ailment.description} />

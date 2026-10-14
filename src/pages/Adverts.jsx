@@ -58,7 +58,7 @@ export default function Adverts() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "https://apihealthconnect.kopanovertex.com/api/portal/adverts/retrieve-all-adverts",
+        "http://localhost:4000/api/portal/adverts/retrieve-all-adverts",
         "GET"
       );
       if (response.adverts) {
@@ -93,7 +93,7 @@ export default function Adverts() {
 
     try {
       const response = await fetchFormData(
-        "https://apihealthconnect.kopanovertex.com/api/portal/adverts/create-adverts",
+        "http://localhost:4000/api/portal/adverts/create-adverts",
         "POST",
         formData
       );
@@ -134,7 +134,7 @@ export default function Adverts() {
 
     try {
       const response = await fetchJSON(
-        `https://apihealthconnect.kopanovertex.com/api/portal/adverts/update-description/${currentAdvertId}`,
+        `http://localhost:4000/api/portal/adverts/update-description/${currentAdvertId}`,
         "PATCH",
         { description: newDescription }
       );
@@ -177,7 +177,7 @@ export default function Adverts() {
 
     try {
       const response = await fetchFormData(
-        `https://apihealthconnect.kopanovertex.com/api/portal/adverts/update-image/${currentAdvertId}`,
+        `http://localhost:4000/api/portal/adverts/update-image/${currentAdvertId}`,
         "PATCH",
         formData
       );
@@ -217,7 +217,7 @@ export default function Adverts() {
 
     try {
       const response = await fetchJSON(
-        `https://apihealthconnect.kopanovertex.com/api/portal/adverts/remove-advert/${id}`,
+        `http://localhost:4000/api/portal/adverts/remove-advert/${id}`,
         "DELETE"
       );
 
@@ -294,7 +294,7 @@ export default function Adverts() {
                         <CardMedia
                           component="img"
                           height="160"
-                          image={`https://apihealthconnect.kopanovertex.com/adverts/${advert.image}`}
+                          image={`http://localhost:4000/adverts/${advert.image}`}
                           alt={advert.description}
                         />
                       )}

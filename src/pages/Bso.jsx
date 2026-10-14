@@ -69,7 +69,7 @@ export default function Transactions() {
       setIsLoading(true);
       try {
         const response = await fetchJSON(
-          "https://apihealthconnect.kopanovertex.com/api/app/transaction/all-transactions",
+          "http://localhost:4000/api/app/transaction/all-transactions",
           "GET"
         );
         if (response.status === true && response.transactions) {

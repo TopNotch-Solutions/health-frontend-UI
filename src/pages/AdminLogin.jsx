@@ -80,7 +80,7 @@ const AdminLogin = () => {
       setIsSubmitting(true);
       try {
         const response = await fetchJSON(
-          "https://apihealthconnect.kopanovertex.com/api/portal/auth/login",
+          "http://localhost:4000/api/portal/auth/login",
           "POST",
           {
             email,

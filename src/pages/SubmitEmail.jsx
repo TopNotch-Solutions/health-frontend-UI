@@ -32,7 +32,7 @@ function SubmitEmail() {
     try {
       // Public endpoint — no auth token; usable by users who are not logged in
       const accountCheck = await fetchJSON(
-        "https://apihealthconnect.kopanovertex.com/api/auth/check-account",
+        "http://localhost:4000/api/auth/check-account",
         "POST",
         { email }
       );
@@ -45,7 +45,7 @@ function SubmitEmail() {
       }
 
       const data = await fetchJSON(
-        "https://apihealthconnect.kopanovertex.com/auth/admin/forgot-password",
+        "http://localhost:4000/auth/admin/forgot-password",
         "POST",
         { email }
       );
