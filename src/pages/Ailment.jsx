@@ -43,7 +43,7 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
 
-const API_BASE = 'http://localhost:4000';
+const API_BASE = 'https://apihealthconnect.kopanovertex.com';
 
 const emptyIcd10 = () => ({
   id: null,
@@ -211,7 +211,7 @@ export default function Ailment() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        "http://localhost:4000/api/portal/aligment/all-alignments",
+        "https://apihealthconnect.kopanovertex.com/api/portal/aligment/all-alignments",
         "GET"
       );
       if (response.ailments) {
@@ -268,7 +268,7 @@ export default function Ailment() {
   const fetchSpecializations = async () => {
     try {
       const response = await fetchJSON(
-        "http://localhost:4000/api/portal/specialization/all-specializations",
+        "https://apihealthconnect.kopanovertex.com/api/portal/specialization/all-specializations",
         "GET"
       );
       if (response.specializations) {
@@ -933,7 +933,7 @@ export default function Ailment() {
     try {
       if (isEdit) {
         const response = await fetchJSON(
-          `http://localhost:4000/api/portal/aligment/update-alignment/${currentAilment.id}`,
+          `https://apihealthconnect.kopanovertex.com/api/portal/aligment/update-alignment/${currentAilment.id}`,
           "PUT",
           {
             title: currentAilment.title,
@@ -973,7 +973,7 @@ export default function Ailment() {
         formData.append('image', imageFile);
 
         const response = await fetchFormData(
-          "http://localhost:4000/api/portal/aligment/create-alignment",
+          "https://apihealthconnect.kopanovertex.com/api/portal/aligment/create-alignment",
           "POST",
           formData
         );
@@ -1008,7 +1008,7 @@ export default function Ailment() {
     if (result.isConfirmed) {
       try {
         const response = await fetchJSON(
-          `http://localhost:4000/api/portal/aligment/delete-alignment/${id}`,
+          `https://apihealthconnect.kopanovertex.com/api/portal/aligment/delete-alignment/${id}`,
           "DELETE"
         );
         if (response.message) {
@@ -1038,7 +1038,7 @@ export default function Ailment() {
 
     try {
       const response = await fetchFormData(
-        `http://localhost:4000/api/portal/aligment/update-ailment-image/${currentAilment.id}`,
+        `https://apihealthconnect.kopanovertex.com/api/portal/aligment/update-ailment-image/${currentAilment.id}`,
         "PUT",
         formData
       );
@@ -1661,7 +1661,7 @@ export default function Ailment() {
                 </Typography>
                 <Box
                   component="img"
-                  src={`http://localhost:4000/ailments/${currentAilment.image}`}
+                  src={`https://apihealthconnect.kopanovertex.com/ailments/${currentAilment.image}`}
                   alt={currentAilment.title}
                   sx={{
                     maxWidth: '100%',

@@ -46,7 +46,7 @@ import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import io from 'socket.io-client';
 
-const API_FILES_BASE = 'http://localhost:4000/images/';
+const API_FILES_BASE = 'https://apihealthconnect.kopanovertex.com/images/';
 const BRAND = '#1674BB';
 
 const formatDate = (value) => {
@@ -242,7 +242,7 @@ export default function Request() {
     fetchRequestStats();
 
     // Initialize socket connection
-    const newSocket = io('http://localhost:4000', {
+    const newSocket = io('https://apihealthconnect.kopanovertex.com', {
       transports: ['websocket', 'polling'],
     });
 
@@ -283,7 +283,7 @@ export default function Request() {
     setIsLoading(true);
     try {
       const response = await fetchJSON(
-        'http://localhost:4000/api/portal/request/stats',
+        'https://apihealthconnect.kopanovertex.com/api/portal/request/stats',
         'GET'
       );
 
@@ -345,7 +345,7 @@ export default function Request() {
     setSelectedRequest(null);
     try {
       const response = await fetchJSON(
-        `http://localhost:4000/api/portal/request/${requestId}`,
+        `https://apihealthconnect.kopanovertex.com/api/portal/request/${requestId}`,
         'GET'
       );
       if (response.status && response.request) {

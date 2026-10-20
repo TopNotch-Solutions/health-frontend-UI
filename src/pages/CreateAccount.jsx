@@ -42,7 +42,7 @@ const CreateAccount = () => {
     try {
       // Public endpoint — no auth token required
       const result = await fetchJSON(
-        "http://localhost:4000/api/auth/check-account",
+        "https://apihealthconnect.kopanovertex.com/api/auth/check-account",
         "POST",
         { email }
       );

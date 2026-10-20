@@ -35,7 +35,7 @@ import fetchJSON from '../utils/fetchJSON';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
 
-const API_BASE = 'http://localhost:4000';
+const API_BASE = 'https://apihealthconnect.kopanovertex.com';
 
 /** Backend: GET /api/portal/issue/counts */
 const ISSUE_COUNTS_URL = `${API_BASE}/api/portal/issue/counts`;

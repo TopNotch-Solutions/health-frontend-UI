@@ -73,7 +73,7 @@ const theme = createTheme({
 });
 
 const HEALTH_PROVIDER_ROLES = ['doctor', 'nurse', 'physiotherapist', 'social worker', 'pharmacist'];
-const API_FILES_BASE = 'http://localhost:4000/images/';
+const API_FILES_BASE = 'https://apihealthconnect.kopanovertex.com/images/';
 
 const getFileUrl = (filename) => (filename ? `${API_FILES_BASE}${filename}` : '');
 
@@ -222,7 +222,7 @@ export default function UserManagement() {
       );
     };
 
-    const newSocket = io('http://localhost:4000', {
+    const newSocket = io('https://apihealthconnect.kopanovertex.com', {
       transports: ['websocket', 'polling'],
     });
 
@@ -238,7 +238,7 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetchJSON('http://localhost:4000/api/app/auth/all-users');
+      const response = await fetchJSON('https://apihealthconnect.kopanovertex.com/api/app/auth/all-users');
       if (response.status && response.users) {
         // Normalize user data - map _id to id for DataGrid
         const normalizedUsers = response.users.map(user => ({
@@ -372,7 +372,7 @@ export default function UserManagement() {
     try {
       setIsLoading(true);
       const response = await fetchJSON(
-        `http://localhost:4000/api/app/auth/approve-documents/${userId}`,
+        `https://apihealthconnect.kopanovertex.com/api/app/auth/approve-documents/${userId}`,
         'PATCH'
       );
       if (response.status) {
@@ -395,7 +395,7 @@ export default function UserManagement() {
     try {
       setIsLoading(true);
       const response = await fetchJSON(
-        `http://localhost:4000/api/app/auth/reject-documents/${selectedUserForRejection}`,
+        `https://apihealthconnect.kopanovertex.com/api/app/auth/reject-documents/${selectedUserForRejection}`,
         'PATCH',
         { reason: rejectionReason }
       );
@@ -467,7 +467,7 @@ export default function UserManagement() {
       filterable: false,
       renderCell: (params) => (
         <Avatar 
-          src={params.row.profileImage ? `http://localhost:4000/images/${params.row.profileImage}` : undefined}
+          src={params.row.profileImage ? `https://apihealthconnect.kopanovertex.com/images/${params.row.profileImage}` : undefined}
           alt={params.row.fullname}
         >
           {params.row.fullname ? params.row.fullname.charAt(0).toUpperCase() : 'U'}
@@ -972,31 +972,31 @@ export default function UserManagement() {
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">ID Document Front</Typography>
                         {currentUser.idDocumentFront && (
-                          <img src={`http://localhost:4000/images/${currentUser.idDocumentFront}`} alt="ID Document Front" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
+                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.idDocumentFront}`} alt="ID Document Front" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
                         )}
                       </Grid>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">ID Document Back</Typography>
                         {currentUser.idDocumentBack && (
-                          <img src={`http://localhost:4000/images/${currentUser.idDocumentBack}`} alt="ID Document Back" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
+                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.idDocumentBack}`} alt="ID Document Back" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
                         )}
                       </Grid>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">Primary Qualification</Typography>
                         {currentUser.primaryQualification && (
-                          <img src={`http://localhost:4000/images/${currentUser.primaryQualification}`} alt="Primary Qualification" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
+                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.primaryQualification}`} alt="Primary Qualification" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
                         )}
                       </Grid>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">Annual Qualification</Typography>
                         {currentUser.annualQualification && (
-                          <img src={`http://localhost:4000/images/${currentUser.annualQualification}`} alt="Annual Qualification" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
+                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.annualQualification}`} alt="Annual Qualification" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
                         )}
                       </Grid>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">Profile Image</Typography>
                         {currentUser.profileImage && (
-                          <img src={`http://localhost:4000/images/${currentUser.profileImage}`} alt="Profile Image" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
+                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.profileImage}`} alt="Profile Image" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
                         )}
                       </Grid>
                     </Grid>
@@ -1093,7 +1093,7 @@ export default function UserManagement() {
                   <Typography variant="body2" color="text.secondary" gutterBottom>Profile Image</Typography>
                   {selectedUserForDocuments.profileImage ? (
                     <Avatar
-                      src={`http://localhost:4000/images/${selectedUserForDocuments.profileImage}`}
+                      src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.profileImage}`}
                       alt={selectedUserForDocuments.fullname || 'User'}
                       sx={{ width: 120, height: 120, mb: 2 }}
                     >
@@ -1379,7 +1379,7 @@ export default function UserManagement() {
                       </Typography>
                       <Box
                         component="img"
-                        src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentFront}`}
+                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentFront}`}
                         alt="ID Document Front"
                         sx={{
                           width: '100%',
@@ -1401,7 +1401,7 @@ export default function UserManagement() {
                       </Typography>
                       <Box
                         component="img"
-                        src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentBack}`}
+                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentBack}`}
                         alt="ID Document Back"
                         sx={{
                           width: '100%',
@@ -1423,7 +1423,7 @@ export default function UserManagement() {
                       </Typography>
                       <Box
                         component="img"
-                        src={`http://localhost:4000/images/${selectedUserForDocuments.profileImage}`}
+                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.profileImage}`}
                         alt="Profile Image"
                         sx={{
                           width: '100%',
@@ -1456,7 +1456,7 @@ export default function UserManagement() {
                     {selectedUserForDocuments.idDocumentFront ? (
                       <Box
                         component="img"
-                        src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentFront}`}
+                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentFront}`}
                         alt="ID Document Front"
                         sx={{
                           width: '100%',
@@ -1495,7 +1495,7 @@ export default function UserManagement() {
                     {selectedUserForDocuments.idDocumentBack ? (
                       <Box
                         component="img"
-                        src={`http://localhost:4000/images/${selectedUserForDocuments.idDocumentBack}`}
+                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentBack}`}
                         alt="ID Document Back"
                         sx={{
                           width: '100%',
@@ -1536,7 +1536,7 @@ export default function UserManagement() {
                         {selectedUserForDocuments.primaryQualification ? (
                           <Box
                             component="img"
-                            src={`http://localhost:4000/images/${selectedUserForDocuments.primaryQualification}`}
+                            src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.primaryQualification}`}
                             alt="Primary Qualification"
                             sx={{
                               width: '100%',
@@ -1575,7 +1575,7 @@ export default function UserManagement() {
                         {selectedUserForDocuments.annualQualification ? (
                           <Box
                             component="img"
-                            src={`http://localhost:4000/images/${selectedUserForDocuments.annualQualification}`}
+                            src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.annualQualification}`}
                             alt="Annual Qualification"
                             sx={{
                               width: '100%',
