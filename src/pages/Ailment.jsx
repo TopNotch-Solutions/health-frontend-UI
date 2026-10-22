@@ -48,6 +48,7 @@ const API_BASE = 'https://apihealthconnect.kopanovertex.com';
 const emptyIcd10 = () => ({
   id: null,
   ICD_10_code: '',
+  MAF: '',
   price: '',
   specializations: [],
   alignments: [],
@@ -169,11 +170,13 @@ export default function Ailment() {
       const q = searchIcd10Query.toLowerCase();
       filtered = icd10Codes.filter((row) => {
         const code = row.ICD_10_code?.toLowerCase() ?? '';
+        const maf = row.MAF?.toLowerCase() ?? '';
         const price = String(row.price ?? '');
         const specs = row.specializationLabel?.toLowerCase() ?? '';
         const aligns = row.alignmentLabel?.toLowerCase() ?? '';
         return (
           code.includes(q) ||
+          maf.includes(q) ||
           price.includes(q) ||
           specs.includes(q) ||
           aligns.includes(q)
@@ -479,6 +482,7 @@ export default function Ailment() {
         return {
           id: item._id || item.id,
           ICD_10_code: item.ICD_10_code || '',
+          MAF: item.MAF || '',
           price:
             item.price !== undefined && item.price !== null ? item.price : null,
           specializationLabel: specs
@@ -515,6 +519,7 @@ export default function Ailment() {
       setCurrentIcd10({
         id: row.id,
         ICD_10_code: row.ICD_10_code || '',
+        MAF: row.MAF || '',
         price:
           row.price !== null && row.price !== undefined ? String(row.price) : '',
         specializations: Array.isArray(row.specializationIds)
@@ -538,6 +543,12 @@ export default function Ailment() {
   const handleSubmitIcd10 = async () => {
     if (!currentIcd10.ICD_10_code || !String(currentIcd10.ICD_10_code).trim()) {
       setSnackbarMessage('ICD-10 code is required.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+    if (!currentIcd10.MAF || !String(currentIcd10.MAF).trim()) {
+      setSnackbarMessage('MAF is required.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
@@ -576,6 +587,7 @@ export default function Ailment() {
     try {
       const body = {
         ICD_10_code: String(currentIcd10.ICD_10_code).trim(),
+        MAF: String(currentIcd10.MAF).trim(),
         price: priceNum,
         specializations: currentIcd10.specializations,
         alignments: currentIcd10.alignments,
@@ -1225,6 +1237,7 @@ export default function Ailment() {
 
   const icd10Columns = [
     { field: 'ICD_10_code', headerName: 'ICD-10 Code', width: 160 },
+    { field: 'MAF', headerName: 'MAF', width: 140 },
     {
       field: 'price',
       headerName: 'Price',
@@ -1367,11 +1380,11 @@ export default function Ailment() {
       label: 'Total Packages',
     },
     icd10: {
-      title: 'ICD-10 Codes',
+      title: 'ICD-10 Codes (MAF)',
       subtitle:
-        'Manage ICD-10 codes with price, specializations, and alignments.',
+        'Manage ICD-10 / MAF codes with price, specializations, and alignments. This code is used as MAF on medical aid claims.',
       count: icd10Count,
-      label: 'Total ICD-10 Codes',
+      label: 'Total ICD-10 / MAF Codes',
     },
     medicalAid: {
       title: 'Medical Aid',
@@ -1415,7 +1428,7 @@ export default function Ailment() {
           >
             <Tab label="Ailments" value="ailments" />
             <Tab label="Packages" value="packages" />
-            <Tab label="ICD-10 Codes" value="icd10" />
+            <Tab label="ICD-10 / MAF" value="icd10" />
             <Tab label="Medical Aid" value="medicalAid" />
           </Tabs>
         </Box>
@@ -1552,14 +1565,14 @@ export default function Ailment() {
             {viewMode === 'icd10' && (
               <>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                  <Typography variant="h5">All ICD-10 Codes</Typography>
+                  <Typography variant="h5">All ICD-10 / MAF Codes</Typography>
                   {canWrite && (
                     <Button
                       variant="contained"
                       startIcon={<AddIcon />}
                       onClick={() => handleOpenIcd10Dialog()}
                     >
-                      Add ICD-10 Code
+                      Add ICD-10 / MAF
                     </Button>
                   )}
                 </Stack>
@@ -1567,7 +1580,7 @@ export default function Ailment() {
                 <Box sx={{ mb: 2 }}>
                   <TextField
                     fullWidth
-                    label="Search ICD-10 codes"
+                    label="Search ICD-10 / MAF codes"
                     variant="outlined"
                     value={searchIcd10Query}
                     onChange={(e) => setSearchIcd10Query(e.target.value)}
@@ -1905,7 +1918,9 @@ export default function Ailment() {
       </Dialog>
 
       <Dialog open={icd10DialogOpen} onClose={handleCloseIcd10Dialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{isIcd10Edit ? 'Edit ICD-10 Code' : 'Add ICD-10 Code'}</DialogTitle>
+        <DialogTitle>
+          {isIcd10Edit ? 'Edit ICD-10 Code' : 'Add ICD-10 Code'}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -1917,6 +1932,17 @@ export default function Ailment() {
                 setCurrentIcd10({ ...currentIcd10, ICD_10_code: e.target.value })
               }
               placeholder="e.g. J06.9"
+            />
+            <TextField
+              label="MAF"
+              fullWidth
+              required
+              value={currentIcd10.MAF}
+              onChange={(e) =>
+                setCurrentIcd10({ ...currentIcd10, MAF: e.target.value })
+              }
+              placeholder="e.g. MAF code"
+              helperText="Used as MAF on medical aid claim statements"
             />
             <TextField
               label="Price"

@@ -1114,16 +1114,20 @@ export default function Request() {
                             value={selectedRequest.medicalAidDetails?.medicalAidTitle}
                           />
                           <MetaItem
-                            label="MAF / Membership No."
-                            value={selectedRequest.medicalAidDetails?.membershipNumber}
-                          />
-                          <MetaItem
                             label="Main Member Name"
                             value={selectedRequest.medicalAidDetails?.mainMemberName}
                           />
                           <MetaItem
                             label="ICD-10 Code"
                             value={selectedRequest.medicalAidDetails?.icd10Code}
+                          />
+                          <MetaItem
+                            label="MAF"
+                            value={
+                              selectedRequest.medicalAidDetails?.maf ||
+                              selectedRequest.medicalAidDetails?.membershipNumber ||
+                              selectedRequest.medicalAidDetails?.icd10Code
+                            }
                           />
                           <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1', md: '1 / -1' } }}>
                             <MetaItem
