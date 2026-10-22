@@ -19,11 +19,24 @@ import PersonIcon from "@mui/icons-material/Person";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
 import HealingIcon from "@mui/icons-material/Healing";
 import HelpIcon from "@mui/icons-material/Help";
+import TodayIcon from "@mui/icons-material/Today";
+import DateRangeIcon from "@mui/icons-material/DateRange";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import { ResponsivePie } from "@nivo/pie";
 import { useDispatch } from "react-redux";
 import LineChartCard from "../components/LineChartCard";
+import PurchaseYoYLineChart from "../components/PurchaseYoYLineChart";
 import fetchJSON from "../utils/fetchJSON";
 import { toast } from "react-toastify";
+
+const emptyPurchasePeriod = { total: 0, count: 0 };
+
+const formatPurchaseTotal = (value) =>
+  `N$ ${Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
 function Dashboard() {
   const dispatch = useDispatch();
@@ -39,6 +52,17 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [topCategory, setTopCategory] = useState([]);
   const [lineData, setLineData] = useState([]);
+  const [purchaseDay, setPurchaseDay] = useState(emptyPurchasePeriod);
+  const [purchaseWeek, setPurchaseWeek] = useState(emptyPurchasePeriod);
+  const [purchaseMonth, setPurchaseMonth] = useState(emptyPurchasePeriod);
+  const [purchaseYear, setPurchaseYear] = useState(emptyPurchasePeriod);
+  const [purchaseYoYLineData, setPurchaseYoYLineData] = useState([]);
+  const [purchaseCurrentYear, setPurchaseCurrentYear] = useState(
+    new Date().getFullYear(),
+  );
+  const [purchasePreviousYear, setPurchasePreviousYear] = useState(
+    new Date().getFullYear() - 1,
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,6 +91,19 @@ function Dashboard() {
           } else {
             setTopCategory([]);
           }
+
+          const purchaseStats = stats.purchaseStats || {};
+          setPurchaseDay(purchaseStats.day || emptyPurchasePeriod);
+          setPurchaseWeek(purchaseStats.week || emptyPurchasePeriod);
+          setPurchaseMonth(purchaseStats.month || emptyPurchasePeriod);
+          setPurchaseYear(purchaseStats.year || emptyPurchasePeriod);
+          setPurchaseYoYLineData(purchaseStats.yoYLineData || []);
+          setPurchaseCurrentYear(
+            purchaseStats.currentYear || new Date().getFullYear(),
+          );
+          setPurchasePreviousYear(
+            purchaseStats.previousYear || new Date().getFullYear() - 1,
+          );
         }
 
         // Fetch specializations count
@@ -223,6 +260,113 @@ function Dashboard() {
                 </Typography>
               </Box>
             </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* Purchase statistics — completed purchases only */}
+      <Grid item xs={12}>
+        <Typography variant="h5" gutterBottom sx={{ mt: 1 }}>
+          Purchase statistics
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Completed package purchases only (day / week / month / year)
+        </Typography>
+      </Grid>
+
+      <Grid item xs={12} sm={6} md={3}>
+        <Card raised sx={{ height: "100%", borderTop: "4px solid #1674BB" }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <TodayIcon sx={{ color: "#1674BB" }} fontSize="large" />
+              <Box>
+                <Typography variant="h5" component="div">
+                  {isLoading ? "..." : formatPurchaseTotal(purchaseDay.total)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Today
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {isLoading ? "" : `${purchaseDay.count || 0} purchases`}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} sm={6} md={3}>
+        <Card raised sx={{ height: "100%", borderTop: "4px solid #28a745" }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <DateRangeIcon sx={{ color: "#28a745" }} fontSize="large" />
+              <Box>
+                <Typography variant="h5" component="div">
+                  {isLoading ? "..." : formatPurchaseTotal(purchaseWeek.total)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This week
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {isLoading ? "" : `${purchaseWeek.count || 0} purchases`}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} sm={6} md={3}>
+        <Card raised sx={{ height: "100%", borderTop: "4px solid #ff9800" }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <CalendarMonthIcon sx={{ color: "#ff9800" }} fontSize="large" />
+              <Box>
+                <Typography variant="h5" component="div">
+                  {isLoading ? "..." : formatPurchaseTotal(purchaseMonth.total)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This month
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {isLoading ? "" : `${purchaseMonth.count || 0} purchases`}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} sm={6} md={3}>
+        <Card raised sx={{ height: "100%", borderTop: "4px solid #9c27b0" }}>
+          <CardContent>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <EventAvailableIcon sx={{ color: "#9c27b0" }} fontSize="large" />
+              <Box>
+                <Typography variant="h5" component="div">
+                  {isLoading ? "..." : formatPurchaseTotal(purchaseYear.total)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This year
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {isLoading ? "" : `${purchaseYear.count || 0} purchases`}
+                </Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12}>
+        <Card raised>
+          <CardContent>
+            <PurchaseYoYLineChart
+              data={purchaseYoYLineData}
+              isLoading={isLoading}
+              currentYear={purchaseCurrentYear}
+              previousYear={purchasePreviousYear}
+            />
           </CardContent>
         </Card>
       </Grid>

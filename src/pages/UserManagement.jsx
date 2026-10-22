@@ -102,6 +102,49 @@ const framedDocumentSx = {
 };
 
 function UploadedFilePreview({ filename, label, asPdf = false }) {
+  const url = getFileUrl(filename);
+  const showAsPdf = Boolean(filename) && (asPdf || isPdfFile(filename));
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+
+  // Load PDFs as a same-origin blob so the iframe is not blocked by the API's
+  // X-Frame-Options: SAMEORIGIN ("refused to connect").
+  useEffect(() => {
+    if (!showAsPdf || !url) {
+      setBlobUrl(null);
+      setLoadError(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    let objectUrl;
+
+    (async () => {
+      try {
+        const response = await fetch(url, { mode: 'cors', credentials: 'include' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (!cancelled) {
+          setBlobUrl(objectUrl);
+          setLoadError(false);
+        } else {
+          URL.revokeObjectURL(objectUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setBlobUrl(null);
+          setLoadError(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [showAsPdf, url]);
+
   if (!filename) {
     return (
       <Box sx={emptyDocumentBoxSx}>
@@ -110,10 +153,9 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
     );
   }
 
-  const url = getFileUrl(filename);
-  const showAsPdf = asPdf || isPdfFile(filename);
-
   if (showAsPdf) {
+    const previewSrc = blobUrl || (!loadError ? url : null);
+
     return (
       <Stack spacing={1}>
         <Box
@@ -125,14 +167,25 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
             boxShadow: 1,
             overflow: 'hidden',
             backgroundColor: '#f5f5f5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <Box
-            component="iframe"
-            src={url}
-            title={label}
-            sx={{ width: '100%', height: '100%', border: 'none' }}
-          />
+          {previewSrc ? (
+            <Box
+              component="iframe"
+              src={previewSrc}
+              title={label}
+              sx={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ px: 2, textAlign: 'center' }}>
+              {loadError
+                ? 'Inline preview unavailable. Use Open PDF in new tab.'
+                : 'Loading PDF preview…'}
+            </Typography>
+          )}
         </Box>
         <Button
           component="a"
@@ -983,16 +1036,34 @@ export default function UserManagement() {
                       </Grid>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">Primary Qualification</Typography>
-                        {currentUser.primaryQualification && (
-                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.primaryQualification}`} alt="Primary Qualification" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
-                        )}
+                        <UploadedFilePreview
+                          filename={currentUser.finalQualification || currentUser.primaryQualification}
+                          label="Primary Qualification"
+                          asPdf
+                        />
                       </Grid>
                       <Grid item xs={6} sm={4}>
-                        <Typography variant="body2" color="text.secondary">Annual Qualification</Typography>
-                        {currentUser.annualQualification && (
-                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.annualQualification}`} alt="Annual Qualification" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
-                        )}
+                        <Typography variant="body2" color="text.secondary">HPCNA Certificate</Typography>
+                        <UploadedFilePreview
+                          filename={
+                            currentUser.hpcnaCertificate ||
+                            currentUser.HPCNAQualification ||
+                            currentUser.annualQualification
+                          }
+                          label="HPCNA Certificate"
+                          asPdf
+                        />
                       </Grid>
+                      {(currentUser.dispensingCertificateLicence) && (
+                        <Grid item xs={6} sm={4}>
+                          <Typography variant="body2" color="text.secondary">Dispensing Certificate / Licence</Typography>
+                          <UploadedFilePreview
+                            filename={currentUser.dispensingCertificateLicence}
+                            label="Dispensing Certificate / Licence"
+                            asPdf
+                          />
+                        </Grid>
+                      )}
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">Profile Image</Typography>
                         {currentUser.profileImage && (
@@ -1526,108 +1597,68 @@ export default function UserManagement() {
                     )}
                   </Box>
                 </Grid>
-                {!isPharmacist(selectedUserForDocuments.role) && (
-                  <>
-                    <Grid item xs={12} sm={6} md={6}>
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-                          Primary Qualification
-                        </Typography>
-                        {selectedUserForDocuments.primaryQualification ? (
-                          <Box
-                            component="img"
-                            src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.primaryQualification}`}
-                            alt="Primary Qualification"
-                            sx={{
-                              width: '100%',
-                              maxHeight: 400,
-                              objectFit: 'contain',
-                              borderRadius: 2,
-                              border: '1px solid #e0e0e0',
-                              boxShadow: 1,
-                              backgroundColor: '#f5f5f5',
-                              p: 1
-                            }}
-                          />
-                        ) : (
-                          <Box
-                            sx={{
-                              width: '100%',
-                              height: 200,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: 2,
-                              border: '1px dashed #e0e0e0',
-                              backgroundColor: '#fafafa'
-                            }}
-                          >
-                            <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                          </Box>
-                        )}
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={6}>
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-                          Annual Qualification
-                        </Typography>
-                        {selectedUserForDocuments.annualQualification ? (
-                          <Box
-                            component="img"
-                            src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.annualQualification}`}
-                            alt="Annual Qualification"
-                            sx={{
-                              width: '100%',
-                              maxHeight: 400,
-                              objectFit: 'contain',
-                              borderRadius: 2,
-                              border: '1px solid #e0e0e0',
-                              boxShadow: 1,
-                              backgroundColor: '#f5f5f5',
-                              p: 1
-                            }}
-                          />
-                        ) : (
-                          <Box
-                            sx={{
-                              width: '100%',
-                              height: 200,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: 2,
-                              border: '1px dashed #e0e0e0',
-                              backgroundColor: '#fafafa'
-                            }}
-                          >
-                            <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                          </Box>
-                        )}
-                      </Box>
-                    </Grid>
-                  </>
+                <Grid item xs={12} sm={6} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                      {isPharmacist(selectedUserForDocuments.role) ? 'Bachelor Certificate' : 'Primary Qualification'}
+                    </Typography>
+                    <UploadedFilePreview
+                      filename={selectedUserForDocuments.finalQualification || selectedUserForDocuments.primaryQualification}
+                      label={isPharmacist(selectedUserForDocuments.role) ? 'Bachelor Certificate' : 'Primary Qualification'}
+                      asPdf
+                    />
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                      HPCNA Certificate
+                    </Typography>
+                    <UploadedFilePreview
+                      filename={
+                        selectedUserForDocuments.hpcnaCertificate ||
+                        selectedUserForDocuments.HPCNAQualification ||
+                        selectedUserForDocuments.annualQualification
+                      }
+                      label="HPCNA Certificate"
+                      asPdf
+                    />
+                  </Box>
+                </Grid>
+                {selectedUserForDocuments.dispensingCertificateLicence && (
+                  <Grid item xs={12} sm={6} md={6}>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                        Dispensing Certificate / Licence
+                      </Typography>
+                      <UploadedFilePreview
+                        filename={selectedUserForDocuments.dispensingCertificateLicence}
+                        label="Dispensing Certificate / Licence"
+                        asPdf
+                      />
+                    </Box>
+                  </Grid>
                 )}
                 {isPharmacist(selectedUserForDocuments.role) && (
                   <>
                     {[
-                      { label: 'HPCNA Certificate', field: 'hpcnaCertificate' },
-                      { label: 'Dispensing Certificate / Licence', field: 'dispensingCertificateLicence' },
                       { label: 'Training Certificate', field: 'trainingCertificate' },
                       { label: 'NQA Evaluation', field: 'NQAEvaluation' },
                     ].map(({ label, field }) => (
-                      <Grid item xs={12} sm={6} md={6} key={field}>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-                            {label}
-                          </Typography>
-                          <UploadedFilePreview
-                            filename={selectedUserForDocuments[field]}
-                            label={label}
-                            asPdf
-                          />
-                        </Box>
-                      </Grid>
+                      selectedUserForDocuments[field] ? (
+                        <Grid item xs={12} sm={6} md={6} key={field}>
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
+                              {label}
+                            </Typography>
+                            <UploadedFilePreview
+                              filename={selectedUserForDocuments[field]}
+                              label={label}
+                              asPdf
+                            />
+                          </Box>
+                        </Grid>
+                      ) : null
                     ))}
                   </>
                 )}

@@ -64,7 +64,7 @@ const theme = createTheme({
   },
 });
 
-export default function User() {
+export default function Administrators() {
   const { canRead, canWrite, canDelete } = usePermissions();
   const [admins, setAdmins] = useState([]);
   const [filteredAdmins, setFilteredAdmins] = useState([]);

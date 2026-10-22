@@ -31,11 +31,16 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import fetchJSON from '../utils/fetchJSON';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
 
 const API_BASE = 'https://apihealthconnect.kopanovertex.com';
+const ISSUE_IMAGES_BASE = `${API_BASE}/issues/`;
+
+const getIssueImageUrl = (filename) =>
+  filename ? `${ISSUE_IMAGES_BASE}${filename}` : '';
 
 /** Backend: GET /api/portal/issue/counts */
 const ISSUE_COUNTS_URL = `${API_BASE}/api/portal/issue/counts`;
@@ -137,7 +142,7 @@ const mockIssues = [
   },
 ];
 
-export default function Content() {
+export default function Issues() {
   const { canRead, canWrite, canDelete } = usePermissions();
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -260,6 +265,41 @@ export default function Content() {
       ),
     },
     {
+      field: 'issueImage',
+      headerName: 'Attachment',
+      width: 110,
+      sortable: false,
+      renderCell: (params) => {
+        const url = getIssueImageUrl(params.value);
+        if (!url) {
+          return (
+            <Typography variant="caption" color="text.secondary">
+              None
+            </Typography>
+          );
+        }
+        return (
+          <Box
+            component="img"
+            src={url}
+            alt="Issue attachment"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditIssue(params.row);
+            }}
+            sx={{
+              width: 48,
+              height: 48,
+              objectFit: 'cover',
+              borderRadius: 1,
+              border: '1px solid #e0e0e0',
+              cursor: 'pointer',
+            }}
+          />
+        );
+      },
+    },
+    {
       field: 'description',
       headerName: 'Description',
       width: 200,
@@ -309,10 +349,21 @@ export default function Content() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 80,
+      width: 100,
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditIssue(params.row);
+            }}
+            title="View issue"
+            color="default"
+          >
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
           {canWrite && params.row.status !== 'Closed' && (
             <IconButton
               size="small"
@@ -326,17 +377,6 @@ export default function Content() {
               <EditIcon fontSize="small" />
             </IconButton>
           )}
-          {/* <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(params.row.id);
-            }}
-            title="Delete Issue"
-            color="error"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton> */}
         </Box>
       ),
     },
@@ -584,17 +624,57 @@ export default function Content() {
       <Dialog
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          Update Issue Status
+          Issue details
         </DialogTitle>
         <DialogContent>
           {selectedIssue && (
             <Stack spacing={2} sx={{ mt: 2 }}>
               <Typography variant="h6">{selectedIssue.title}</Typography>
-              <Typography variant="body2" color="text.secondary">{selectedIssue.description}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedIssue.description}
+              </Typography>
+              {selectedIssue.issueImage ? (
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    gutterBottom
+                    sx={{ fontWeight: 600 }}
+                  >
+                    Attached image
+                  </Typography>
+                  <Box
+                    component="a"
+                    href={getIssueImageUrl(selectedIssue.issueImage)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ display: 'inline-block' }}
+                  >
+                    <Box
+                      component="img"
+                      src={getIssueImageUrl(selectedIssue.issueImage)}
+                      alt="Issue attachment"
+                      sx={{
+                        width: '100%',
+                        maxHeight: 420,
+                        objectFit: 'contain',
+                        borderRadius: 2,
+                        border: '1px solid #e0e0e0',
+                        backgroundColor: '#f5f5f5',
+                        p: 1,
+                      }}
+                    />
+                  </Box>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No image was attached to this issue.
+                </Typography>
+              )}
               <FormControl fullWidth>
                 <InputLabel>New Status</InputLabel>
                 <Select
