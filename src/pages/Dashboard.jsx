@@ -31,12 +31,148 @@ import fetchJSON from "../utils/fetchJSON";
 import { toast } from "react-toastify";
 
 const emptyPurchasePeriod = { total: 0, count: 0 };
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 const formatPurchaseTotal = (value) =>
   `N$ ${Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+
+/** Namibia business day boundaries (UTC+2). */
+const BUSINESS_TZ_OFFSET_MS = 2 * 60 * 60 * 1000;
+
+function toBusinessParts(date = new Date()) {
+  const shifted = new Date(date.getTime() + BUSINESS_TZ_OFFSET_MS);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth(),
+    day: shifted.getUTCDate(),
+    weekday: shifted.getUTCDay(),
+  };
+}
+
+function startOfBusinessDay(date = new Date()) {
+  const { year, month, day } = toBusinessParts(date);
+  return new Date(Date.UTC(year, month, day) - BUSINESS_TZ_OFFSET_MS);
+}
+
+function startOfBusinessWeek(date = new Date()) {
+  const start = startOfBusinessDay(date);
+  const { weekday } = toBusinessParts(date);
+  const daysFromMonday = weekday === 0 ? 6 : weekday - 1;
+  return new Date(start.getTime() - daysFromMonday * 24 * 60 * 60 * 1000);
+}
+
+function startOfBusinessMonth(date = new Date()) {
+  const { year, month } = toBusinessParts(date);
+  return new Date(Date.UTC(year, month, 1) - BUSINESS_TZ_OFFSET_MS);
+}
+
+function startOfBusinessYear(date = new Date()) {
+  const { year } = toBusinessParts(date);
+  return new Date(Date.UTC(year, 0, 1) - BUSINESS_TZ_OFFSET_MS);
+}
+
+function transactionEffectiveTime(tx) {
+  const raw = tx?.time || tx?.createdAt;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function isCompletedPurchase(tx) {
+  if (!tx || String(tx.type || "").toLowerCase() !== "purchase") return false;
+  const status = String(tx.status || "completed").toLowerCase();
+  return status === "completed" || status === "";
+}
+
+function sumPurchasesSince(purchases, fromDate) {
+  let total = 0;
+  let count = 0;
+  for (const tx of purchases) {
+    const when = transactionEffectiveTime(tx);
+    if (!when || when < fromDate) continue;
+    total += Number(tx.amount) || 0;
+    count += 1;
+  }
+  return { total, count };
+}
+
+/** Build day/week/month/year + YoY series from the transactions ledger. */
+function computePurchaseStatsFromTransactions(transactions) {
+  const purchases = (Array.isArray(transactions) ? transactions : []).filter(
+    isCompletedPurchase,
+  );
+  const now = new Date();
+  const { year: currentYear } = toBusinessParts(now);
+  const previousYear = currentYear - 1;
+
+  const yoYMap = new Map();
+  for (const tx of purchases) {
+    const when = transactionEffectiveTime(tx);
+    if (!when) continue;
+    const parts = toBusinessParts(when);
+    if (parts.year !== currentYear && parts.year !== previousYear) continue;
+    const key = `${parts.year}-${parts.month + 1}`;
+    yoYMap.set(key, (yoYMap.get(key) || 0) + (Number(tx.amount) || 0));
+  }
+
+  const yoYLineData = MONTH_NAMES.map((name, index) => {
+    const month = index + 1;
+    return {
+      name,
+      currentYear: yoYMap.get(`${currentYear}-${month}`) || 0,
+      previousYear: yoYMap.get(`${previousYear}-${month}`) || 0,
+    };
+  });
+
+  return {
+    day: sumPurchasesSince(purchases, startOfBusinessDay(now)),
+    week: sumPurchasesSince(purchases, startOfBusinessWeek(now)),
+    month: sumPurchasesSince(purchases, startOfBusinessMonth(now)),
+    year: sumPurchasesSince(purchases, startOfBusinessYear(now)),
+    currentYear,
+    previousYear,
+    yoYLineData,
+  };
+}
+
+function applyPurchaseStats(purchaseStats, setters) {
+  const {
+    setPurchaseDay,
+    setPurchaseWeek,
+    setPurchaseMonth,
+    setPurchaseYear,
+    setPurchaseYoYLineData,
+    setPurchaseCurrentYear,
+    setPurchasePreviousYear,
+  } = setters;
+  setPurchaseDay(purchaseStats.day || emptyPurchasePeriod);
+  setPurchaseWeek(purchaseStats.week || emptyPurchasePeriod);
+  setPurchaseMonth(purchaseStats.month || emptyPurchasePeriod);
+  setPurchaseYear(purchaseStats.year || emptyPurchasePeriod);
+  setPurchaseYoYLineData(purchaseStats.yoYLineData || []);
+  setPurchaseCurrentYear(
+    purchaseStats.currentYear || new Date().getFullYear(),
+  );
+  setPurchasePreviousYear(
+    purchaseStats.previousYear || new Date().getFullYear() - 1,
+  );
+}
 
 function Dashboard() {
   const dispatch = useDispatch();
@@ -93,17 +229,40 @@ function Dashboard() {
           }
 
           const purchaseStats = stats.purchaseStats || {};
-          setPurchaseDay(purchaseStats.day || emptyPurchasePeriod);
-          setPurchaseWeek(purchaseStats.week || emptyPurchasePeriod);
-          setPurchaseMonth(purchaseStats.month || emptyPurchasePeriod);
-          setPurchaseYear(purchaseStats.year || emptyPurchasePeriod);
-          setPurchaseYoYLineData(purchaseStats.yoYLineData || []);
-          setPurchaseCurrentYear(
-            purchaseStats.currentYear || new Date().getFullYear(),
+          applyPurchaseStats(purchaseStats, {
+            setPurchaseDay,
+            setPurchaseWeek,
+            setPurchaseMonth,
+            setPurchaseYear,
+            setPurchaseYoYLineData,
+            setPurchaseCurrentYear,
+            setPurchasePreviousYear,
+          });
+        }
+
+        // Prefer live ledger totals so purchase KPIs match the Transactions page
+        // even if dashboard-stats is stale or returns zeros.
+        try {
+          const txResponse = await fetchJSON(
+            "https://apihealthconnect.kopanovertex.com/api/app/transaction/all-transactions",
+            "GET",
           );
-          setPurchasePreviousYear(
-            purchaseStats.previousYear || new Date().getFullYear() - 1,
-          );
+          if (txResponse?.status === true && Array.isArray(txResponse.transactions)) {
+            const fromLedger = computePurchaseStatsFromTransactions(
+              txResponse.transactions,
+            );
+            applyPurchaseStats(fromLedger, {
+              setPurchaseDay,
+              setPurchaseWeek,
+              setPurchaseMonth,
+              setPurchaseYear,
+              setPurchaseYoYLineData,
+              setPurchaseCurrentYear,
+              setPurchasePreviousYear,
+            });
+          }
+        } catch (err) {
+          console.error("Error computing purchase stats from transactions:", err);
         }
 
         // Fetch specializations count

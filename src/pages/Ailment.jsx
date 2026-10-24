@@ -50,6 +50,9 @@ const emptyIcd10 = () => ({
   ICD_10_code: '',
   MAF: '',
   price: '',
+  showSecondaryIcd: false,
+  secondaryICD_10_code: '',
+  secondaryPrice: '',
   specializations: [],
   alignments: [],
 });
@@ -170,14 +173,18 @@ export default function Ailment() {
       const q = searchIcd10Query.toLowerCase();
       filtered = icd10Codes.filter((row) => {
         const code = row.ICD_10_code?.toLowerCase() ?? '';
+        const secondaryCode = row.secondaryICD_10_code?.toLowerCase() ?? '';
         const maf = row.MAF?.toLowerCase() ?? '';
         const price = String(row.price ?? '');
+        const secondaryPrice = String(row.secondaryPrice ?? '');
         const specs = row.specializationLabel?.toLowerCase() ?? '';
         const aligns = row.alignmentLabel?.toLowerCase() ?? '';
         return (
           code.includes(q) ||
+          secondaryCode.includes(q) ||
           maf.includes(q) ||
           price.includes(q) ||
+          secondaryPrice.includes(q) ||
           specs.includes(q) ||
           aligns.includes(q)
         );
@@ -485,6 +492,11 @@ export default function Ailment() {
           MAF: item.MAF || '',
           price:
             item.price !== undefined && item.price !== null ? item.price : null,
+          secondaryICD_10_code: item.secondaryICD_10_code || '',
+          secondaryPrice:
+            item.secondaryPrice !== undefined && item.secondaryPrice !== null
+              ? item.secondaryPrice
+              : null,
           specializationLabel: specs
             .map((s) => (typeof s === 'object' ? s.title : s))
             .filter(Boolean)
@@ -516,12 +528,24 @@ export default function Ailment() {
   const handleOpenIcd10Dialog = (row = null) => {
     if (row != null && row.id != null && row.id !== '') {
       setIsIcd10Edit(true);
+      const hasSecondary = Boolean(
+        (row.secondaryICD_10_code && String(row.secondaryICD_10_code).trim()) ||
+          (row.secondaryPrice !== null &&
+            row.secondaryPrice !== undefined &&
+            row.secondaryPrice !== '')
+      );
       setCurrentIcd10({
         id: row.id,
         ICD_10_code: row.ICD_10_code || '',
         MAF: row.MAF || '',
         price:
           row.price !== null && row.price !== undefined ? String(row.price) : '',
+        showSecondaryIcd: hasSecondary,
+        secondaryICD_10_code: row.secondaryICD_10_code || '',
+        secondaryPrice:
+          row.secondaryPrice !== null && row.secondaryPrice !== undefined
+            ? String(row.secondaryPrice)
+            : '',
         specializations: Array.isArray(row.specializationIds)
           ? row.specializationIds
           : [],
@@ -565,6 +589,53 @@ export default function Ailment() {
       setSnackbarOpen(true);
       return;
     }
+
+    const secondaryCode = currentIcd10.showSecondaryIcd
+      ? String(currentIcd10.secondaryICD_10_code || '').trim()
+      : '';
+    const secondaryPriceRaw = currentIcd10.showSecondaryIcd
+      ? currentIcd10.secondaryPrice
+      : '';
+    const hasSecondaryCode = Boolean(secondaryCode);
+    const hasSecondaryPrice =
+      secondaryPriceRaw !== '' &&
+      secondaryPriceRaw !== null &&
+      secondaryPriceRaw !== undefined;
+    let secondaryPriceNum = null;
+
+    if (currentIcd10.showSecondaryIcd) {
+      if (hasSecondaryCode !== hasSecondaryPrice) {
+        setSnackbarMessage(
+          'Second ICD-10 code and second price must both be provided, or remove the second code section.'
+        );
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+      if (hasSecondaryCode && hasSecondaryPrice) {
+        secondaryPriceNum = parseFloat(secondaryPriceRaw);
+        if (isNaN(secondaryPriceNum) || secondaryPriceNum < 0) {
+          setSnackbarMessage(
+            'Second price must be a valid non-negative number.'
+          );
+          setSnackbarSeverity('error');
+          setSnackbarOpen(true);
+          return;
+        }
+        if (
+          secondaryCode.toUpperCase() ===
+          String(currentIcd10.ICD_10_code).trim().toUpperCase()
+        ) {
+          setSnackbarMessage(
+            'Second ICD-10 code must be different from the primary ICD-10 code.'
+          );
+          setSnackbarSeverity('error');
+          setSnackbarOpen(true);
+          return;
+        }
+      }
+    }
+
     if (
       !Array.isArray(currentIcd10.specializations) ||
       currentIcd10.specializations.length === 0
@@ -589,6 +660,8 @@ export default function Ailment() {
         ICD_10_code: String(currentIcd10.ICD_10_code).trim(),
         MAF: String(currentIcd10.MAF).trim(),
         price: priceNum,
+        secondaryICD_10_code: hasSecondaryCode ? secondaryCode : '',
+        secondaryPrice: hasSecondaryCode ? secondaryPriceNum : '',
         specializations: currentIcd10.specializations,
         alignments: currentIcd10.alignments,
       };
@@ -1235,36 +1308,49 @@ export default function Ailment() {
     },
   ];
 
+  const formatIcdPrice = (value) => {
+    if (value === undefined || value === null || value === '') {
+      return '—';
+    }
+    const numValue = typeof value === 'number' ? value : parseFloat(value);
+    if (isNaN(numValue)) {
+      return '—';
+    }
+    return `N$${numValue.toFixed(2)}`;
+  };
+
   const icd10Columns = [
-    { field: 'ICD_10_code', headerName: 'ICD-10 Code', width: 160 },
-    { field: 'MAF', headerName: 'MAF', width: 140 },
+    { field: 'ICD_10_code', headerName: 'ICD-10 Code', width: 130 },
+    {
+      field: 'secondaryICD_10_code',
+      headerName: '2nd ICD-10',
+      width: 130,
+      renderCell: (params) => params.value || '—',
+    },
+    { field: 'MAF', headerName: 'MAF', width: 120 },
     {
       field: 'price',
       headerName: 'Price',
-      width: 140,
-      renderCell: (params) => {
-        const value = params.value;
-        if (value === undefined || value === null || value === '') {
-          return '—';
-        }
-        const numValue = typeof value === 'number' ? value : parseFloat(value);
-        if (isNaN(numValue)) {
-          return '—';
-        }
-        return `N$${numValue.toFixed(2)}`;
-      },
+      width: 110,
+      renderCell: (params) => formatIcdPrice(params.value),
+    },
+    {
+      field: 'secondaryPrice',
+      headerName: '2nd Price',
+      width: 110,
+      renderCell: (params) => formatIcdPrice(params.value),
     },
     {
       field: 'specializationLabel',
       headerName: 'Specializations',
       flex: 1,
-      minWidth: 200,
+      minWidth: 180,
     },
     {
       field: 'alignmentLabel',
       headerName: 'Alignments',
       flex: 1,
-      minWidth: 200,
+      minWidth: 180,
     },
     {
       field: 'icd10Actions',
@@ -1382,7 +1468,7 @@ export default function Ailment() {
     icd10: {
       title: 'ICD-10 Codes (MAF)',
       subtitle:
-        'Manage ICD-10 / MAF codes with price, specializations, and alignments. This code is used as MAF on medical aid claims.',
+        'Manage ICD-10 / MAF codes with price, optional second ICD-10 + price, specializations, and alignments. MAF is used on medical aid claims.',
       count: icd10Count,
       label: 'Total ICD-10 / MAF Codes',
     },
@@ -1953,6 +2039,84 @@ export default function Ailment() {
               onChange={(e) => setCurrentIcd10({ ...currentIcd10, price: e.target.value })}
               inputProps={{ step: '0.01', min: '0' }}
             />
+            {!currentIcd10.showSecondaryIcd ? (
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={() =>
+                  setCurrentIcd10({
+                    ...currentIcd10,
+                    showSecondaryIcd: true,
+                  })
+                }
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                Add second ICD-10 Code
+              </Button>
+            ) : (
+              <Stack
+                spacing={2}
+                sx={{
+                  p: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                  }}
+                >
+                  <Typography variant="subtitle2">
+                    Second ICD-10 Code
+                  </Typography>
+                  <Button
+                    size="small"
+                    color="inherit"
+                    onClick={() =>
+                      setCurrentIcd10({
+                        ...currentIcd10,
+                        showSecondaryIcd: false,
+                        secondaryICD_10_code: '',
+                        secondaryPrice: '',
+                      })
+                    }
+                  >
+                    Remove
+                  </Button>
+                </Box>
+                <TextField
+                  label="Second ICD-10 Code"
+                  fullWidth
+                  value={currentIcd10.secondaryICD_10_code}
+                  onChange={(e) =>
+                    setCurrentIcd10({
+                      ...currentIcd10,
+                      secondaryICD_10_code: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. J00"
+                />
+                <TextField
+                  label="Second Price"
+                  fullWidth
+                  type="number"
+                  value={currentIcd10.secondaryPrice}
+                  onChange={(e) =>
+                    setCurrentIcd10({
+                      ...currentIcd10,
+                      secondaryPrice: e.target.value,
+                    })
+                  }
+                  inputProps={{ step: '0.01', min: '0' }}
+                  helperText="Medical aid consultation cost will be primary price + second price"
+                />
+              </Stack>
+            )}
             <FormControl fullWidth required component="fieldset">
               <FormLabel component="legend" sx={{ mb: 1 }}>
                 Specializations

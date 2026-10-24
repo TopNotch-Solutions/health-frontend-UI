@@ -1121,6 +1121,15 @@ export default function Request() {
                             label="ICD-10 Code"
                             value={selectedRequest.medicalAidDetails?.icd10Code}
                           />
+                          {selectedRequest.medicalAidDetails?.secondaryIcd10Code && (
+                            <MetaItem
+                              label="Second ICD-10 Code"
+                              value={
+                                selectedRequest.medicalAidDetails
+                                  ?.secondaryIcd10Code
+                              }
+                            />
+                          )}
                           <MetaItem
                             label="MAF"
                             value={
