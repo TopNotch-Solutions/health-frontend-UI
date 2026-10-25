@@ -1131,13 +1131,21 @@ export default function Request() {
                             />
                           )}
                           <MetaItem
-                            label="MAF"
+                            label="NAMAF"
                             value={
                               selectedRequest.medicalAidDetails?.maf ||
                               selectedRequest.medicalAidDetails?.membershipNumber ||
                               selectedRequest.medicalAidDetails?.icd10Code
                             }
                           />
+                          {selectedRequest.medicalAidDetails?.secondaryMaf && (
+                            <MetaItem
+                              label="Second NAMAF"
+                              value={
+                                selectedRequest.medicalAidDetails?.secondaryMaf
+                              }
+                            />
+                          )}
                           <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1', md: '1 / -1' } }}>
                             <MetaItem
                               label="Patient Residential Address"

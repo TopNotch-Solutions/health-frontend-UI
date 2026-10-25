@@ -52,6 +52,7 @@ const emptyIcd10 = () => ({
   price: '',
   showSecondaryIcd: false,
   secondaryICD_10_code: '',
+  secondaryMAF: '',
   secondaryPrice: '',
   specializations: [],
   alignments: [],
@@ -175,6 +176,7 @@ export default function Ailment() {
         const code = row.ICD_10_code?.toLowerCase() ?? '';
         const secondaryCode = row.secondaryICD_10_code?.toLowerCase() ?? '';
         const maf = row.MAF?.toLowerCase() ?? '';
+        const secondaryMaf = row.secondaryMAF?.toLowerCase() ?? '';
         const price = String(row.price ?? '');
         const secondaryPrice = String(row.secondaryPrice ?? '');
         const specs = row.specializationLabel?.toLowerCase() ?? '';
@@ -183,6 +185,7 @@ export default function Ailment() {
           code.includes(q) ||
           secondaryCode.includes(q) ||
           maf.includes(q) ||
+          secondaryMaf.includes(q) ||
           price.includes(q) ||
           secondaryPrice.includes(q) ||
           specs.includes(q) ||
@@ -493,6 +496,7 @@ export default function Ailment() {
           price:
             item.price !== undefined && item.price !== null ? item.price : null,
           secondaryICD_10_code: item.secondaryICD_10_code || '',
+          secondaryMAF: item.secondaryMAF || '',
           secondaryPrice:
             item.secondaryPrice !== undefined && item.secondaryPrice !== null
               ? item.secondaryPrice
@@ -530,6 +534,7 @@ export default function Ailment() {
       setIsIcd10Edit(true);
       const hasSecondary = Boolean(
         (row.secondaryICD_10_code && String(row.secondaryICD_10_code).trim()) ||
+          (row.secondaryMAF && String(row.secondaryMAF).trim()) ||
           (row.secondaryPrice !== null &&
             row.secondaryPrice !== undefined &&
             row.secondaryPrice !== '')
@@ -542,6 +547,7 @@ export default function Ailment() {
           row.price !== null && row.price !== undefined ? String(row.price) : '',
         showSecondaryIcd: hasSecondary,
         secondaryICD_10_code: row.secondaryICD_10_code || '',
+        secondaryMAF: row.secondaryMAF || '',
         secondaryPrice:
           row.secondaryPrice !== null && row.secondaryPrice !== undefined
             ? String(row.secondaryPrice)
@@ -572,7 +578,7 @@ export default function Ailment() {
       return;
     }
     if (!currentIcd10.MAF || !String(currentIcd10.MAF).trim()) {
-      setSnackbarMessage('MAF is required.');
+      setSnackbarMessage('NAMAF is required.');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
       return;
@@ -593,10 +599,14 @@ export default function Ailment() {
     const secondaryCode = currentIcd10.showSecondaryIcd
       ? String(currentIcd10.secondaryICD_10_code || '').trim()
       : '';
+    const secondaryMaf = currentIcd10.showSecondaryIcd
+      ? String(currentIcd10.secondaryMAF || '').trim()
+      : '';
     const secondaryPriceRaw = currentIcd10.showSecondaryIcd
       ? currentIcd10.secondaryPrice
       : '';
     const hasSecondaryCode = Boolean(secondaryCode);
+    const hasSecondaryMaf = Boolean(secondaryMaf);
     const hasSecondaryPrice =
       secondaryPriceRaw !== '' &&
       secondaryPriceRaw !== null &&
@@ -604,15 +614,19 @@ export default function Ailment() {
     let secondaryPriceNum = null;
 
     if (currentIcd10.showSecondaryIcd) {
-      if (hasSecondaryCode !== hasSecondaryPrice) {
+      const secondaryComplete =
+        hasSecondaryCode && hasSecondaryMaf && hasSecondaryPrice;
+      const secondaryEmpty =
+        !hasSecondaryCode && !hasSecondaryMaf && !hasSecondaryPrice;
+      if (!secondaryComplete && !secondaryEmpty) {
         setSnackbarMessage(
-          'Second ICD-10 code and second price must both be provided, or remove the second code section.'
+          'Second ICD-10 code, second NAMAF, and second price must all be provided, or remove the second code section.'
         );
         setSnackbarSeverity('error');
         setSnackbarOpen(true);
         return;
       }
-      if (hasSecondaryCode && hasSecondaryPrice) {
+      if (secondaryComplete) {
         secondaryPriceNum = parseFloat(secondaryPriceRaw);
         if (isNaN(secondaryPriceNum) || secondaryPriceNum < 0) {
           setSnackbarMessage(
@@ -661,6 +675,7 @@ export default function Ailment() {
         MAF: String(currentIcd10.MAF).trim(),
         price: priceNum,
         secondaryICD_10_code: hasSecondaryCode ? secondaryCode : '',
+        secondaryMAF: hasSecondaryCode ? secondaryMaf : '',
         secondaryPrice: hasSecondaryCode ? secondaryPriceNum : '',
         specializations: currentIcd10.specializations,
         alignments: currentIcd10.alignments,
@@ -1324,20 +1339,26 @@ export default function Ailment() {
     {
       field: 'secondaryICD_10_code',
       headerName: '2nd ICD-10',
-      width: 130,
+      width: 120,
       renderCell: (params) => params.value || '—',
     },
-    { field: 'MAF', headerName: 'MAF', width: 120 },
+    { field: 'MAF', headerName: 'NAMAF', width: 110 },
+    {
+      field: 'secondaryMAF',
+      headerName: '2nd NAMAF',
+      width: 110,
+      renderCell: (params) => params.value || '—',
+    },
     {
       field: 'price',
       headerName: 'Price',
-      width: 110,
+      width: 100,
       renderCell: (params) => formatIcdPrice(params.value),
     },
     {
       field: 'secondaryPrice',
       headerName: '2nd Price',
-      width: 110,
+      width: 100,
       renderCell: (params) => formatIcdPrice(params.value),
     },
     {
@@ -1466,11 +1487,11 @@ export default function Ailment() {
       label: 'Total Packages',
     },
     icd10: {
-      title: 'ICD-10 Codes (MAF)',
+      title: 'ICD-10 Codes (NAMAF)',
       subtitle:
-        'Manage ICD-10 / MAF codes with price, optional second ICD-10 + price, specializations, and alignments. MAF is used on medical aid claims.',
+        'Manage ICD-10 / NAMAF codes with price, optional second ICD-10 + NAMAF + price, specializations, and alignments. NAMAF is used on medical aid claims.',
       count: icd10Count,
-      label: 'Total ICD-10 / MAF Codes',
+      label: 'Total ICD-10 / NAMAF Codes',
     },
     medicalAid: {
       title: 'Medical Aid',
@@ -1514,7 +1535,7 @@ export default function Ailment() {
           >
             <Tab label="Ailments" value="ailments" />
             <Tab label="Packages" value="packages" />
-            <Tab label="ICD-10 / MAF" value="icd10" />
+            <Tab label="ICD-10 / NAMAF" value="icd10" />
             <Tab label="Medical Aid" value="medicalAid" />
           </Tabs>
         </Box>
@@ -1651,14 +1672,14 @@ export default function Ailment() {
             {viewMode === 'icd10' && (
               <>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                  <Typography variant="h5">All ICD-10 / MAF Codes</Typography>
+                  <Typography variant="h5">All ICD-10 / NAMAF Codes</Typography>
                   {canWrite && (
                     <Button
                       variant="contained"
                       startIcon={<AddIcon />}
                       onClick={() => handleOpenIcd10Dialog()}
                     >
-                      Add ICD-10 / MAF
+                      Add ICD-10 / NAMAF
                     </Button>
                   )}
                 </Stack>
@@ -1666,7 +1687,7 @@ export default function Ailment() {
                 <Box sx={{ mb: 2 }}>
                   <TextField
                     fullWidth
-                    label="Search ICD-10 / MAF codes"
+                    label="Search ICD-10 / NAMAF codes"
                     variant="outlined"
                     value={searchIcd10Query}
                     onChange={(e) => setSearchIcd10Query(e.target.value)}
@@ -2020,15 +2041,15 @@ export default function Ailment() {
               placeholder="e.g. J06.9"
             />
             <TextField
-              label="MAF"
+              label="NAMAF"
               fullWidth
               required
               value={currentIcd10.MAF}
               onChange={(e) =>
                 setCurrentIcd10({ ...currentIcd10, MAF: e.target.value })
               }
-              placeholder="e.g. MAF code"
-              helperText="Used as MAF on medical aid claim statements"
+              placeholder="e.g. NAMAF code"
+              helperText="Used as NAMAF on medical aid claim statements"
             />
             <TextField
               label="Price"
@@ -2082,6 +2103,7 @@ export default function Ailment() {
                         ...currentIcd10,
                         showSecondaryIcd: false,
                         secondaryICD_10_code: '',
+                        secondaryMAF: '',
                         secondaryPrice: '',
                       })
                     }
@@ -2100,6 +2122,19 @@ export default function Ailment() {
                     })
                   }
                   placeholder="e.g. J00"
+                />
+                <TextField
+                  label="Second NAMAF"
+                  fullWidth
+                  value={currentIcd10.secondaryMAF}
+                  onChange={(e) =>
+                    setCurrentIcd10({
+                      ...currentIcd10,
+                      secondaryMAF: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. NAMAF code"
+                  helperText="Used as NAMAF for the second ICD-10 on medical aid claim statements"
                 />
                 <TextField
                   label="Second Price"
