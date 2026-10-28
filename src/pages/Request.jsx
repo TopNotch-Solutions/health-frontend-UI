@@ -1118,6 +1118,10 @@ export default function Request() {
                             value={selectedRequest.medicalAidDetails?.mainMemberName}
                           />
                           <MetaItem
+                            label="Main Member ID"
+                            value={selectedRequest.medicalAidDetails?.mainMemberId}
+                          />
+                          <MetaItem
                             label="ICD-10 Code"
                             value={selectedRequest.medicalAidDetails?.icd10Code}
                           />
@@ -1131,10 +1135,15 @@ export default function Request() {
                             />
                           )}
                           <MetaItem
+                            label="Medical Aid Number"
+                            value={
+                              selectedRequest.medicalAidDetails?.membershipNumber
+                            }
+                          />
+                          <MetaItem
                             label="NAMAF"
                             value={
                               selectedRequest.medicalAidDetails?.maf ||
-                              selectedRequest.medicalAidDetails?.membershipNumber ||
                               selectedRequest.medicalAidDetails?.icd10Code
                             }
                           />

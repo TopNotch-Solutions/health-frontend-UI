@@ -41,6 +41,7 @@ export default function Adverts() {
   const [currentAdvertId, setCurrentAdvertId] = useState(null);
 
   const [newDescription, setNewDescription] = useState("");
+  const [newContactNumber, setNewContactNumber] = useState("");
   const [newImageFile, setNewImageFile] = useState(null);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -75,6 +76,7 @@ export default function Adverts() {
   const openCreateDialog = () => {
     setCurrentAdvertId(null);
     setNewDescription("");
+    setNewContactNumber("");
     setNewImageFile(null);
     setCreateDialogOpen(true);
   };
@@ -89,6 +91,7 @@ export default function Adverts() {
 
     const formData = new FormData();
     formData.append("description", newDescription);
+    formData.append("contactNumber", newContactNumber.trim());
     formData.append("image", newImageFile);
 
     try {
@@ -109,6 +112,7 @@ export default function Adverts() {
       setSnackbarOpen(true);
       setCreateDialogOpen(false);
       setNewDescription("");
+      setNewContactNumber("");
       setNewImageFile(null);
       fetchAdverts();
     } catch (error) {
@@ -121,6 +125,7 @@ export default function Adverts() {
   const openEditDialog = (advert) => {
     setCurrentAdvertId(advert._id);
     setNewDescription(advert.description || "");
+    setNewContactNumber(advert.contactNumber || "");
     setEditDialogOpen(true);
   };
 
@@ -136,7 +141,10 @@ export default function Adverts() {
       const response = await fetchJSON(
         `https://apihealthconnect.kopanovertex.com/api/portal/adverts/update-description/${currentAdvertId}`,
         "PATCH",
-        { description: newDescription }
+        {
+          description: newDescription,
+          contactNumber: newContactNumber.trim(),
+        }
       );
 
       if (response.message) {
@@ -150,6 +158,7 @@ export default function Adverts() {
       setSnackbarOpen(true);
       setEditDialogOpen(false);
       setNewDescription("");
+      setNewContactNumber("");
       fetchAdverts();
     } catch (error) {
       setSnackbarMessage(error.message || "Failed to update description.");
@@ -312,6 +321,15 @@ export default function Adverts() {
                         >
                           {advert.description}
                         </Typography>
+                        {advert.contactNumber ? (
+                          <Typography
+                            variant="body2"
+                            color="primary"
+                            sx={{ mb: 1 }}
+                          >
+                            {advert.contactNumber}
+                          </Typography>
+                        ) : null}
                         <Stack direction="row" spacing={1}>
                           {canWrite && (
                             <>
@@ -371,6 +389,15 @@ export default function Adverts() {
               onChange={(e) => setNewDescription(e.target.value)}
               required
             />
+            <TextField
+              label="Contact number"
+              variant="outlined"
+              fullWidth
+              value={newContactNumber}
+              onChange={(e) => setNewContactNumber(e.target.value)}
+              placeholder="e.g. +264 81 123 4567"
+              helperText="Shown in the app. Users can tap to dial."
+            />
             <Button variant="outlined" component="label">
               Choose Image
               <input
@@ -406,7 +433,7 @@ export default function Adverts() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Edit Advert Description</DialogTitle>
+        <DialogTitle>Edit Advert</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -418,6 +445,15 @@ export default function Adverts() {
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               required
+            />
+            <TextField
+              label="Contact number"
+              variant="outlined"
+              fullWidth
+              value={newContactNumber}
+              onChange={(e) => setNewContactNumber(e.target.value)}
+              placeholder="e.g. +264 81 123 4567"
+              helperText="Shown in the app. Users can tap to dial."
             />
           </Stack>
         </DialogContent>

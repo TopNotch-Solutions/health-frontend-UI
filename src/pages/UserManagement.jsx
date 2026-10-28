@@ -75,7 +75,25 @@ const theme = createTheme({
 const HEALTH_PROVIDER_ROLES = ['doctor', 'nurse', 'physiotherapist', 'social worker', 'pharmacist'];
 const API_FILES_BASE = 'https://apihealthconnect.kopanovertex.com/images/';
 
-const getFileUrl = (filename) => (filename ? `${API_FILES_BASE}${filename}` : '');
+/** Portal JWT — sensitive /images/* (ID docs, certificates) require this. */
+const getAccessToken = () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    return token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim();
+  } catch {
+    return null;
+  }
+};
+
+/** Authenticated file URL (?access_token=) for <img>/<a> — backend SENSITIVE_STATIC_RE. */
+const getFileUrl = (filename) => {
+  if (!filename) return '';
+  const base = `${API_FILES_BASE}${filename}`;
+  const token = getAccessToken();
+  if (!token) return base;
+  return `${base}?access_token=${encodeURIComponent(token)}`;
+};
 
 const isPdfFile = (filename) => /\.pdf$/i.test(filename || '');
 
@@ -107,10 +125,10 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
   const [blobUrl, setBlobUrl] = useState(null);
   const [loadError, setLoadError] = useState(false);
 
-  // Load PDFs as a same-origin blob so the iframe is not blocked by the API's
-  // X-Frame-Options: SAMEORIGIN ("refused to connect").
+  // Fetch with Authorization so ID docs / certs pass the sensitive-static JWT gate.
+  // PDFs also become same-origin blobs (avoids X-Frame-Options blocking the iframe).
   useEffect(() => {
-    if (!showAsPdf || !url) {
+    if (!filename || !url) {
       setBlobUrl(null);
       setLoadError(false);
       return undefined;
@@ -121,7 +139,13 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
 
     (async () => {
       try {
-        const response = await fetch(url, { mode: 'cors', credentials: 'include' });
+        const token = getAccessToken();
+        const headers = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+          headers['x-access-token'] = `Bearer ${token}`;
+        }
+        const response = await fetch(url, { mode: 'cors', headers });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const blob = await response.blob();
         objectUrl = URL.createObjectURL(blob);
@@ -143,7 +167,7 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [showAsPdf, url]);
+  }, [filename, url]);
 
   if (!filename) {
     return (
@@ -153,9 +177,15 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
     );
   }
 
-  if (showAsPdf) {
-    const previewSrc = blobUrl || (!loadError ? url : null);
+  if (!blobUrl && !loadError) {
+    return (
+      <Box sx={emptyDocumentBoxSx}>
+        <Typography variant="body2" color="text.secondary">Loading…</Typography>
+      </Box>
+    );
+  }
 
+  if (showAsPdf) {
     return (
       <Stack spacing={1}>
         <Box
@@ -172,18 +202,16 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
             justifyContent: 'center',
           }}
         >
-          {previewSrc ? (
+          {blobUrl && !loadError ? (
             <Box
               component="iframe"
-              src={previewSrc}
+              src={blobUrl}
               title={label}
               sx={{ width: '100%', height: '100%', border: 'none' }}
             />
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ px: 2, textAlign: 'center' }}>
-              {loadError
-                ? 'Inline preview unavailable. Use Open PDF in new tab.'
-                : 'Loading PDF preview…'}
+              Inline preview unavailable. Use Open PDF in new tab.
             </Typography>
           )}
         </Box>
@@ -203,10 +231,20 @@ function UploadedFilePreview({ filename, label, asPdf = false }) {
     );
   }
 
+  if (loadError) {
+    return (
+      <Box sx={emptyDocumentBoxSx}>
+        <Typography variant="body2" color="text.secondary" sx={{ px: 2, textAlign: 'center' }}>
+          Unable to load document. Sign in again if this persists.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box
       component="img"
-      src={url}
+      src={blobUrl}
       alt={label}
       sx={framedDocumentSx}
     />
@@ -1024,15 +1062,17 @@ export default function UserManagement() {
                     <Grid container spacing={2}>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">ID Document Front</Typography>
-                        {currentUser.idDocumentFront && (
-                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.idDocumentFront}`} alt="ID Document Front" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
-                        )}
+                        <UploadedFilePreview
+                          filename={currentUser.idDocumentFront}
+                          label="ID Document Front"
+                        />
                       </Grid>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">ID Document Back</Typography>
-                        {currentUser.idDocumentBack && (
-                          <img src={`https://apihealthconnect.kopanovertex.com/images/${currentUser.idDocumentBack}`} alt="ID Document Back" style={{ width: '100%', height: 'auto', borderRadius: 8 }} />
-                        )}
+                        <UploadedFilePreview
+                          filename={currentUser.idDocumentBack}
+                          label="ID Document Back"
+                        />
                       </Grid>
                       <Grid item xs={6} sm={4}>
                         <Typography variant="body2" color="text.secondary">Primary Qualification</Typography>
@@ -1433,11 +1473,8 @@ export default function UserManagement() {
                 )}
               </Grid>
 
-              {/* Patient Documents Section - Show ID front, ID back, and profile image */}
-              {selectedUserForDocuments.role === 'patient' && 
-               selectedUserForDocuments.idDocumentFront && 
-               selectedUserForDocuments.idDocumentBack && 
-               selectedUserForDocuments.profileImage && (
+              {/* Patient Documents Section - show each file independently */}
+              {selectedUserForDocuments.role === 'patient' && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>Patient Documents</Typography>
@@ -1448,20 +1485,9 @@ export default function UserManagement() {
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
                         ID Document Front
                       </Typography>
-                      <Box
-                        component="img"
-                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentFront}`}
-                        alt="ID Document Front"
-                        sx={{
-                          width: '100%',
-                          maxHeight: 400,
-                          objectFit: 'contain',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: 1,
-                          backgroundColor: '#f5f5f5',
-                          p: 1
-                        }}
+                      <UploadedFilePreview
+                        filename={selectedUserForDocuments.idDocumentFront}
+                        label="ID Document Front"
                       />
                     </Box>
                   </Grid>
@@ -1470,20 +1496,9 @@ export default function UserManagement() {
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
                         ID Document Back
                       </Typography>
-                      <Box
-                        component="img"
-                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentBack}`}
-                        alt="ID Document Back"
-                        sx={{
-                          width: '100%',
-                          maxHeight: 400,
-                          objectFit: 'contain',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: 1,
-                          backgroundColor: '#f5f5f5',
-                          p: 1
-                        }}
+                      <UploadedFilePreview
+                        filename={selectedUserForDocuments.idDocumentBack}
+                        label="ID Document Back"
                       />
                     </Box>
                   </Grid>
@@ -1492,28 +1507,26 @@ export default function UserManagement() {
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
                         Profile Image
                       </Typography>
-                      <Box
-                        component="img"
-                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.profileImage}`}
-                        alt="Profile Image"
-                        sx={{
-                          width: '100%',
-                          maxHeight: 400,
-                          objectFit: 'contain',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: 1,
-                          backgroundColor: '#f5f5f5',
-                          p: 1
-                        }}
+                      <UploadedFilePreview
+                        filename={selectedUserForDocuments.profileImage}
+                        label="Profile Image"
                       />
                     </Box>
                   </Grid>
                 </Grid>
               )}
 
-              {/* Documents Section - Only show for health providers with documents */}
-              {isHealthProvider(selectedUserForDocuments.role) && selectedUserForDocuments.isDocumentsSubmitted && (
+              {/* Documents Section - health providers: show whenever docs exist or were marked submitted */}
+              {isHealthProvider(selectedUserForDocuments.role) && (
+                selectedUserForDocuments.isDocumentsSubmitted ||
+                selectedUserForDocuments.idDocumentFront ||
+                selectedUserForDocuments.idDocumentBack ||
+                selectedUserForDocuments.finalQualification ||
+                selectedUserForDocuments.primaryQualification ||
+                selectedUserForDocuments.hpcnaCertificate ||
+                selectedUserForDocuments.HPCNAQualification ||
+                selectedUserForDocuments.annualQualification
+              ) && (
                 <Grid container spacing={2} sx={{ mt: 2 }}>
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>Submitted Documents</Typography>
@@ -1524,38 +1537,10 @@ export default function UserManagement() {
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
                       ID Document Front
                     </Typography>
-                    {selectedUserForDocuments.idDocumentFront ? (
-                      <Box
-                        component="img"
-                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentFront}`}
-                        alt="ID Document Front"
-                        sx={{
-                          width: '100%',
-                          maxHeight: 400,
-                          objectFit: 'contain',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: 1,
-                          backgroundColor: '#f5f5f5',
-                          p: 1
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: 200,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: 2,
-                          border: '1px dashed #e0e0e0',
-                          backgroundColor: '#fafafa'
-                        }}
-                      >
-                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                      </Box>
-                    )}
+                    <UploadedFilePreview
+                      filename={selectedUserForDocuments.idDocumentFront}
+                      label="ID Document Front"
+                    />
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={6} md={6}>
@@ -1563,38 +1548,10 @@ export default function UserManagement() {
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
                       ID Document Back
                     </Typography>
-                    {selectedUserForDocuments.idDocumentBack ? (
-                      <Box
-                        component="img"
-                        src={`https://apihealthconnect.kopanovertex.com/images/${selectedUserForDocuments.idDocumentBack}`}
-                        alt="ID Document Back"
-                        sx={{
-                          width: '100%',
-                          maxHeight: 400,
-                          objectFit: 'contain',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: 1,
-                          backgroundColor: '#f5f5f5',
-                          p: 1
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          width: '100%',
-                          height: 200,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: 2,
-                          border: '1px dashed #e0e0e0',
-                          backgroundColor: '#fafafa'
-                        }}
-                      >
-                        <Typography variant="body2" color="text.secondary">Not provided</Typography>
-                      </Box>
-                    )}
+                    <UploadedFilePreview
+                      filename={selectedUserForDocuments.idDocumentBack}
+                      label="ID Document Back"
+                    />
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={6} md={6}>
