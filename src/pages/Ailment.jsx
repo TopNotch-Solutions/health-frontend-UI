@@ -42,21 +42,64 @@ import { fetchFormData } from '../utils/fetchFormData';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 const API_BASE = 'https://apihealthconnect.kopanovertex.com';
+
+const MAX_ICD10_CODES = 5;
+
+const emptyAdditionalIcd = () => ({
+  ICD_10_code: '',
+  MAF: '',
+  price: '',
+});
 
 const emptyIcd10 = () => ({
   id: null,
   ICD_10_code: '',
   MAF: '',
   price: '',
-  showSecondaryIcd: false,
-  secondaryICD_10_code: '',
-  secondaryMAF: '',
-  secondaryPrice: '',
+  additionalIcds: [],
   specializations: [],
   alignments: [],
 });
+
+/** Normalize API/legacy secondary fields into additionalIcds (codes 2–5). */
+const buildAdditionalIcdsFromRow = (row) => {
+  if (Array.isArray(row?.additionalIcds) && row.additionalIcds.length) {
+    return row.additionalIcds
+      .slice(0, MAX_ICD10_CODES - 1)
+      .map((item) => ({
+        ICD_10_code: item.ICD_10_code || item.code || '',
+        MAF: item.MAF || item.maf || '',
+        price:
+          item.price !== null && item.price !== undefined
+            ? String(item.price)
+            : '',
+      }));
+  }
+  const hasSecondary = Boolean(
+    (row?.secondaryICD_10_code && String(row.secondaryICD_10_code).trim()) ||
+      (row?.secondaryMAF && String(row.secondaryMAF).trim()) ||
+      (row?.secondaryPrice !== null &&
+        row?.secondaryPrice !== undefined &&
+        row?.secondaryPrice !== '')
+  );
+  if (!hasSecondary) return [];
+  return [
+    {
+      ICD_10_code: row.secondaryICD_10_code || '',
+      MAF: row.secondaryMAF || '',
+      price:
+        row.secondaryPrice !== null && row.secondaryPrice !== undefined
+          ? String(row.secondaryPrice)
+          : '',
+    },
+  ];
+};
 
 const emptyMedicalAid = () => ({
   id: null,
@@ -181,6 +224,12 @@ export default function Ailment() {
         const secondaryPrice = String(row.secondaryPrice ?? '');
         const specs = row.specializationLabel?.toLowerCase() ?? '';
         const aligns = row.alignmentLabel?.toLowerCase() ?? '';
+        const extraMatch = (row.additionalIcds || []).some((item) => {
+          const c = (item.ICD_10_code || item.code || '').toLowerCase();
+          const m = (item.MAF || item.maf || '').toLowerCase();
+          const p = String(item.price ?? '');
+          return c.includes(q) || m.includes(q) || p.includes(q);
+        });
         return (
           code.includes(q) ||
           secondaryCode.includes(q) ||
@@ -189,7 +238,8 @@ export default function Ailment() {
           price.includes(q) ||
           secondaryPrice.includes(q) ||
           specs.includes(q) ||
-          aligns.includes(q)
+          aligns.includes(q) ||
+          extraMatch
         );
       });
     }
@@ -489,6 +539,9 @@ export default function Ailment() {
       const formatted = raw.map((item) => {
         const specs = Array.isArray(item.specializations) ? item.specializations : [];
         const aligns = Array.isArray(item.alignments) ? item.alignments : [];
+        const additionalIcds = Array.isArray(item.additionalIcds)
+          ? item.additionalIcds
+          : [];
         return {
           id: item._id || item.id,
           ICD_10_code: item.ICD_10_code || '',
@@ -501,6 +554,11 @@ export default function Ailment() {
             item.secondaryPrice !== undefined && item.secondaryPrice !== null
               ? item.secondaryPrice
               : null,
+          additionalIcds,
+          additionalCodesLabel: additionalIcds
+            .map((a) => a.ICD_10_code || a.code)
+            .filter(Boolean)
+            .join(', '),
           specializationLabel: specs
             .map((s) => (typeof s === 'object' ? s.title : s))
             .filter(Boolean)
@@ -532,26 +590,13 @@ export default function Ailment() {
   const handleOpenIcd10Dialog = (row = null) => {
     if (row != null && row.id != null && row.id !== '') {
       setIsIcd10Edit(true);
-      const hasSecondary = Boolean(
-        (row.secondaryICD_10_code && String(row.secondaryICD_10_code).trim()) ||
-          (row.secondaryMAF && String(row.secondaryMAF).trim()) ||
-          (row.secondaryPrice !== null &&
-            row.secondaryPrice !== undefined &&
-            row.secondaryPrice !== '')
-      );
       setCurrentIcd10({
         id: row.id,
         ICD_10_code: row.ICD_10_code || '',
         MAF: row.MAF || '',
         price:
           row.price !== null && row.price !== undefined ? String(row.price) : '',
-        showSecondaryIcd: hasSecondary,
-        secondaryICD_10_code: row.secondaryICD_10_code || '',
-        secondaryMAF: row.secondaryMAF || '',
-        secondaryPrice:
-          row.secondaryPrice !== null && row.secondaryPrice !== undefined
-            ? String(row.secondaryPrice)
-            : '',
+        additionalIcds: buildAdditionalIcdsFromRow(row),
         specializations: Array.isArray(row.specializationIds)
           ? row.specializationIds
           : [],
@@ -596,58 +641,67 @@ export default function Ailment() {
       return;
     }
 
-    const secondaryCode = currentIcd10.showSecondaryIcd
-      ? String(currentIcd10.secondaryICD_10_code || '').trim()
-      : '';
-    const secondaryMaf = currentIcd10.showSecondaryIcd
-      ? String(currentIcd10.secondaryMAF || '').trim()
-      : '';
-    const secondaryPriceRaw = currentIcd10.showSecondaryIcd
-      ? currentIcd10.secondaryPrice
-      : '';
-    const hasSecondaryCode = Boolean(secondaryCode);
-    const hasSecondaryMaf = Boolean(secondaryMaf);
-    const hasSecondaryPrice =
-      secondaryPriceRaw !== '' &&
-      secondaryPriceRaw !== null &&
-      secondaryPriceRaw !== undefined;
-    let secondaryPriceNum = null;
+    const primaryCodeUpper = String(currentIcd10.ICD_10_code)
+      .trim()
+      .toUpperCase();
+    const additionalRows = Array.isArray(currentIcd10.additionalIcds)
+      ? currentIcd10.additionalIcds
+      : [];
+    if (additionalRows.length > MAX_ICD10_CODES - 1) {
+      setSnackbarMessage(
+        `You can add at most ${MAX_ICD10_CODES} ICD-10 codes (1 primary + ${MAX_ICD10_CODES - 1} additional).`
+      );
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
 
-    if (currentIcd10.showSecondaryIcd) {
-      const secondaryComplete =
-        hasSecondaryCode && hasSecondaryMaf && hasSecondaryPrice;
-      const secondaryEmpty =
-        !hasSecondaryCode && !hasSecondaryMaf && !hasSecondaryPrice;
-      if (!secondaryComplete && !secondaryEmpty) {
+    const normalizedAdditional = [];
+    const seenCodes = new Set([primaryCodeUpper]);
+    for (let i = 0; i < additionalRows.length; i += 1) {
+      const row = additionalRows[i] || {};
+      const code = String(row.ICD_10_code || '').trim();
+      const maf = String(row.MAF || '').trim();
+      const priceRaw = row.price;
+      const hasCode = Boolean(code);
+      const hasMaf = Boolean(maf);
+      const hasPrice =
+        priceRaw !== '' && priceRaw !== null && priceRaw !== undefined;
+      const complete = hasCode && hasMaf && hasPrice;
+      const empty = !hasCode && !hasMaf && !hasPrice;
+      if (!complete && !empty) {
         setSnackbarMessage(
-          'Second ICD-10 code, second NAMAF, and second price must all be provided, or remove the second code section.'
+          `Additional ICD-10 #${i + 2}: code, NAMAF, and price must all be provided, or remove that row.`
         );
         setSnackbarSeverity('error');
         setSnackbarOpen(true);
         return;
       }
-      if (secondaryComplete) {
-        secondaryPriceNum = parseFloat(secondaryPriceRaw);
-        if (isNaN(secondaryPriceNum) || secondaryPriceNum < 0) {
-          setSnackbarMessage(
-            'Second price must be a valid non-negative number.'
-          );
-          setSnackbarSeverity('error');
-          setSnackbarOpen(true);
-          return;
-        }
-        if (
-          secondaryCode.toUpperCase() ===
-          String(currentIcd10.ICD_10_code).trim().toUpperCase()
-        ) {
-          setSnackbarMessage(
-            'Second ICD-10 code must be different from the primary ICD-10 code.'
-          );
-          setSnackbarSeverity('error');
-          setSnackbarOpen(true);
-          return;
-        }
+      if (empty) continue;
+      const codeUpper = code.toUpperCase();
+      if (seenCodes.has(codeUpper)) {
+        setSnackbarMessage(
+          `Duplicate ICD-10 code ${codeUpper}. Each code on this record must be unique.`
+        );
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
       }
+      const extraPrice = parseFloat(priceRaw);
+      if (isNaN(extraPrice) || extraPrice < 0) {
+        setSnackbarMessage(
+          `Additional ICD-10 #${i + 2}: price must be a valid non-negative number.`
+        );
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+      seenCodes.add(codeUpper);
+      normalizedAdditional.push({
+        ICD_10_code: code,
+        MAF: maf,
+        price: extraPrice,
+      });
     }
 
     if (
@@ -674,9 +728,7 @@ export default function Ailment() {
         ICD_10_code: String(currentIcd10.ICD_10_code).trim(),
         MAF: String(currentIcd10.MAF).trim(),
         price: priceNum,
-        secondaryICD_10_code: hasSecondaryCode ? secondaryCode : '',
-        secondaryMAF: hasSecondaryCode ? secondaryMaf : '',
-        secondaryPrice: hasSecondaryCode ? secondaryPriceNum : '',
+        additionalIcds: normalizedAdditional,
         specializations: currentIcd10.specializations,
         alignments: currentIcd10.alignments,
       };
@@ -1336,19 +1388,7 @@ export default function Ailment() {
 
   const icd10Columns = [
     { field: 'ICD_10_code', headerName: 'ICD-10 Code', width: 130 },
-    {
-      field: 'secondaryICD_10_code',
-      headerName: '2nd ICD-10',
-      width: 120,
-      renderCell: (params) => params.value || '—',
-    },
     { field: 'MAF', headerName: 'NAMAF', width: 110 },
-    {
-      field: 'secondaryMAF',
-      headerName: '2nd NAMAF',
-      width: 110,
-      renderCell: (params) => params.value || '—',
-    },
     {
       field: 'price',
       headerName: 'Price',
@@ -1356,10 +1396,13 @@ export default function Ailment() {
       renderCell: (params) => formatIcdPrice(params.value),
     },
     {
-      field: 'secondaryPrice',
-      headerName: '2nd Price',
-      width: 100,
-      renderCell: (params) => formatIcdPrice(params.value),
+      field: 'additionalCodesLabel',
+      headerName: 'Additional ICD-10',
+      width: 180,
+      renderCell: (params) => {
+        if (params.value) return params.value;
+        return params.row.secondaryICD_10_code || '—';
+      },
     },
     {
       field: 'specializationLabel',
@@ -1489,7 +1532,7 @@ export default function Ailment() {
     icd10: {
       title: 'ICD-10 Codes (NAMAF)',
       subtitle:
-        'Manage ICD-10 / NAMAF codes with price, optional second ICD-10 + NAMAF + price, specializations, and alignments. NAMAF is used on medical aid claims.',
+        'Manage ICD-10 / NAMAF codes with price, up to 5 ICD-10 codes per record (each with NAMAF + price), specializations, and alignments. NAMAF is used on medical aid claims.',
       count: icd10Count,
       label: 'Total ICD-10 / NAMAF Codes',
     },
@@ -1603,7 +1646,7 @@ export default function Ailment() {
                   />
                 </Box>
 
-                <Box sx={{ height: 600, width: '100%' }}>
+                <Box sx={DATA_GRID_CONTAINER_SX}>
                   {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                       <CircularProgress />
@@ -1613,7 +1656,12 @@ export default function Ailment() {
                       rows={filteredAilments}
                       columns={columns}
                       getRowId={(row) => row.id}
+                      sx={mergeDataGridSx()}
                       pageSizeOptions={[25, 50, 100]}
+                      initialState={{
+                        pagination: { paginationModel: { pageSize: 25 } },
+                      }}
+                      disableRowSelectionOnClick
                     />
                   )}
                 </Box>
@@ -1652,7 +1700,7 @@ export default function Ailment() {
                   />
                 </Box>
 
-                <Box sx={{ height: 600, width: '100%' }}>
+                <Box sx={DATA_GRID_CONTAINER_SX}>
                   {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                       <CircularProgress />
@@ -1662,7 +1710,12 @@ export default function Ailment() {
                       rows={filteredPackages}
                       columns={packageColumns}
                       getRowId={(row) => row.id}
+                      sx={mergeDataGridSx()}
                       pageSizeOptions={[25, 50, 100]}
+                      initialState={{
+                        pagination: { paginationModel: { pageSize: 25 } },
+                      }}
+                      disableRowSelectionOnClick
                     />
                   )}
                 </Box>
@@ -1701,7 +1754,7 @@ export default function Ailment() {
                   />
                 </Box>
 
-                <Box sx={{ height: 600, width: '100%' }}>
+                <Box sx={DATA_GRID_CONTAINER_SX}>
                   {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                       <CircularProgress />
@@ -1711,7 +1764,12 @@ export default function Ailment() {
                       rows={filteredIcd10Codes}
                       columns={icd10Columns}
                       getRowId={(row) => row.id}
+                      sx={mergeDataGridSx()}
                       pageSizeOptions={[25, 50, 100]}
+                      initialState={{
+                        pagination: { paginationModel: { pageSize: 25 } },
+                      }}
+                      disableRowSelectionOnClick
                     />
                   )}
                 </Box>
@@ -1750,7 +1808,7 @@ export default function Ailment() {
                   />
                 </Box>
 
-                <Box sx={{ height: 600, width: '100%' }}>
+                <Box sx={DATA_GRID_CONTAINER_SX}>
                   {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                       <CircularProgress />
@@ -1760,7 +1818,12 @@ export default function Ailment() {
                       rows={filteredMedicalAids}
                       columns={medicalAidColumns}
                       getRowId={(row) => row.id}
+                      sx={mergeDataGridSx()}
                       pageSizeOptions={[25, 50, 100]}
+                      initialState={{
+                        pagination: { paginationModel: { pageSize: 25 } },
+                      }}
+                      disableRowSelectionOnClick
                     />
                   )}
                 </Box>
@@ -2060,22 +2123,12 @@ export default function Ailment() {
               onChange={(e) => setCurrentIcd10({ ...currentIcd10, price: e.target.value })}
               inputProps={{ step: '0.01', min: '0' }}
             />
-            {!currentIcd10.showSecondaryIcd ? (
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() =>
-                  setCurrentIcd10({
-                    ...currentIcd10,
-                    showSecondaryIcd: true,
-                  })
-                }
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Add second ICD-10 Code
-              </Button>
-            ) : (
+            {(Array.isArray(currentIcd10.additionalIcds)
+              ? currentIcd10.additionalIcds
+              : []
+            ).map((extra, index) => (
               <Stack
+                key={`additional-icd-${index}`}
                 spacing={2}
                 sx={{
                   p: 2,
@@ -2093,64 +2146,83 @@ export default function Ailment() {
                   }}
                 >
                   <Typography variant="subtitle2">
-                    Second ICD-10 Code
+                    ICD-10 Code #{index + 2}
                   </Typography>
                   <Button
                     size="small"
                     color="inherit"
-                    onClick={() =>
+                    onClick={() => {
+                      const next = [...(currentIcd10.additionalIcds || [])];
+                      next.splice(index, 1);
                       setCurrentIcd10({
                         ...currentIcd10,
-                        showSecondaryIcd: false,
-                        secondaryICD_10_code: '',
-                        secondaryMAF: '',
-                        secondaryPrice: '',
-                      })
-                    }
+                        additionalIcds: next,
+                      });
+                    }}
                   >
                     Remove
                   </Button>
                 </Box>
                 <TextField
-                  label="Second ICD-10 Code"
+                  label={`ICD-10 Code #${index + 2}`}
                   fullWidth
-                  value={currentIcd10.secondaryICD_10_code}
-                  onChange={(e) =>
-                    setCurrentIcd10({
-                      ...currentIcd10,
-                      secondaryICD_10_code: e.target.value,
-                    })
-                  }
+                  value={extra.ICD_10_code}
+                  onChange={(e) => {
+                    const next = [...(currentIcd10.additionalIcds || [])];
+                    next[index] = {
+                      ...next[index],
+                      ICD_10_code: e.target.value,
+                    };
+                    setCurrentIcd10({ ...currentIcd10, additionalIcds: next });
+                  }}
                   placeholder="e.g. J00"
                 />
                 <TextField
-                  label="Second NAMAF"
+                  label={`NAMAF #${index + 2}`}
                   fullWidth
-                  value={currentIcd10.secondaryMAF}
-                  onChange={(e) =>
-                    setCurrentIcd10({
-                      ...currentIcd10,
-                      secondaryMAF: e.target.value,
-                    })
-                  }
+                  value={extra.MAF}
+                  onChange={(e) => {
+                    const next = [...(currentIcd10.additionalIcds || [])];
+                    next[index] = { ...next[index], MAF: e.target.value };
+                    setCurrentIcd10({ ...currentIcd10, additionalIcds: next });
+                  }}
                   placeholder="e.g. NAMAF code"
-                  helperText="Used as NAMAF for the second ICD-10 on medical aid claim statements"
+                  helperText="Used as NAMAF for this ICD-10 on medical aid claim statements"
                 />
                 <TextField
-                  label="Second Price"
+                  label={`Price #${index + 2}`}
                   fullWidth
                   type="number"
-                  value={currentIcd10.secondaryPrice}
-                  onChange={(e) =>
-                    setCurrentIcd10({
-                      ...currentIcd10,
-                      secondaryPrice: e.target.value,
-                    })
-                  }
+                  value={extra.price}
+                  onChange={(e) => {
+                    const next = [...(currentIcd10.additionalIcds || [])];
+                    next[index] = { ...next[index], price: e.target.value };
+                    setCurrentIcd10({ ...currentIcd10, additionalIcds: next });
+                  }}
                   inputProps={{ step: '0.01', min: '0' }}
-                  helperText="Medical aid consultation cost will be primary price + second price"
+                  helperText="Medical aid consultation cost is the sum of all ICD-10 prices"
                 />
               </Stack>
+            ))}
+            {(currentIcd10.additionalIcds?.length || 0) < MAX_ICD10_CODES - 1 && (
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={() =>
+                  setCurrentIcd10({
+                    ...currentIcd10,
+                    additionalIcds: [
+                      ...(currentIcd10.additionalIcds || []),
+                      emptyAdditionalIcd(),
+                    ],
+                  })
+                }
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                Add another ICD-10 Code (
+                {(currentIcd10.additionalIcds?.length || 0) + 1}/{MAX_ICD10_CODES - 1}{' '}
+                additional)
+              </Button>
             )}
             <FormControl fullWidth required component="fieldset">
               <FormLabel component="legend" sx={{ mb: 1 }}>

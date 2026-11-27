@@ -42,6 +42,10 @@ import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -628,7 +632,7 @@ export default function Administrators() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ height: 600, width: '100%' }}>
+              <Box sx={DATA_GRID_CONTAINER_SX}>
                 {isLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                     <CircularProgress />
@@ -638,24 +642,19 @@ export default function Administrators() {
                     rows={filteredAdmins}
                     columns={adminColumns}
                     getRowId={(row) => row.id}
-                  sx={{
-                    '& .MuiDataGrid-root': {
+                    sx={mergeDataGridSx({
                       fontFamily: 'Roboto, sans-serif',
-                    },
-                    '& .MuiDataGrid-row:hover': {
-                      backgroundColor: 'rgba(22, 116, 187, 0.04)',
-                    },
-                  }}
-                  initialState={{
-                    pagination: {
-                      paginationModel: {
-                        pageSize: 25,
+                    })}
+                    initialState={{
+                      pagination: {
+                        paginationModel: {
+                          pageSize: 25,
+                        },
                       },
-                    },
-                    sorting: {
-                      sortModel: [{ field: 'createdAt', sort: 'desc' }],
-                    },
-                  }}
+                      sorting: {
+                        sortModel: [{ field: 'createdAt', sort: 'desc' }],
+                      },
+                    }}
                     pageSizeOptions={[25, 50, 100]}
                     disableRowSelectionOnClick
                   />

@@ -35,6 +35,10 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import fetchJSON from '../utils/fetchJSON';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 const API_BASE = 'https://apihealthconnect.kopanovertex.com';
 const ISSUE_IMAGES_BASE = `${API_BASE}/issues/`;
@@ -587,19 +591,14 @@ export default function Issues() {
                 </Grid> */}
               </Grid>
 
-              <Box sx={{ height: 600, width: '100%' }}>
+              <Box sx={DATA_GRID_CONTAINER_SX}>
                 <DataGrid
                   rows={filteredIssues}
                   columns={issueColumns}
                   getRowId={(row) => row._id}
-                  sx={{
-                    '& .MuiDataGrid-root': {
-                      fontFamily: 'Roboto, sans-serif',
-                    },
-                    '& .MuiDataGrid-row:hover': {
-                      backgroundColor: 'rgba(22, 116, 187, 0.04)',
-                    },
-                  }}
+                  sx={mergeDataGridSx({
+                    fontFamily: 'Roboto, sans-serif',
+                  })}
                   initialState={{
                     pagination: {
                       paginationModel: {

@@ -31,6 +31,10 @@ import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { usePermissions } from '../utils/usePermissions';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 export default function Specialization() {
   const { canRead, canWrite, canDelete } = usePermissions();
@@ -324,7 +328,7 @@ export default function Specialization() {
               />
             </Box>
 
-            <Box sx={{ height: 600, width: '100%' }}>
+            <Box sx={DATA_GRID_CONTAINER_SX}>
               {isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                   <CircularProgress />
@@ -334,7 +338,12 @@ export default function Specialization() {
                   rows={filteredSpecializations}
                   columns={columns}
                   getRowId={(row) => row.id}
+                  sx={mergeDataGridSx()}
                   pageSizeOptions={[25, 50, 100]}
+                  initialState={{
+                    pagination: { paginationModel: { pageSize: 25 } },
+                  }}
+                  disableRowSelectionOnClick
                 />
               )}
             </Box>

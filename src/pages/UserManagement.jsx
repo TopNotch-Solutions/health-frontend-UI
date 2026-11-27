@@ -50,6 +50,10 @@ import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../utils/usePermissions';
 import io from 'socket.io-client';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -858,20 +862,15 @@ export default function UserManagement() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ height: 600, width: '100%', overflowX: 'auto' }}>
+              <Box sx={DATA_GRID_CONTAINER_SX}>
                 <DataGrid
                   rows={filteredUsers}
                   columns={userColumns}
                   getRowId={(row) => row.id || row._id}
                   loading={isLoading}
-                  sx={{
-                    '& .MuiDataGrid-root': {
-                      fontFamily: 'Roboto, sans-serif',
-                    },
-                    '& .MuiDataGrid-row:hover': {
-                      backgroundColor: 'rgba(22, 116, 187, 0.04)',
-                    },
-                  }}
+                  sx={mergeDataGridSx({
+                    fontFamily: 'Roboto, sans-serif',
+                  })}
                   initialState={{
                     pagination: {
                       paginationModel: {

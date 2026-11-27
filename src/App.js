@@ -57,7 +57,12 @@ function App() {
             >
               <div>{sidebar && <Topbar OpenSidebar={OpenSidebar} />}</div>
               <div
-                style={{ flexGrow: 1, overflow: "auto" }}
+                style={{
+                  flexGrow: 1,
+                  overflow: "auto",
+                  overscrollBehavior: "contain",
+                  WebkitOverflowScrolling: "touch",
+                }}
               >
                 <Routes>
                   <Route path="/" element={<AdminLogin />} />

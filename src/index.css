@@ -33,3 +33,13 @@ p,
   display: flex;
   position: relative;
 }
+
+/* Portal DataGrid: keep scroll inside the grid (no page-scroll chaining). */
+.MuiDataGrid-virtualScroller {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.MuiDataGrid-main {
+  overflow: hidden;
+}

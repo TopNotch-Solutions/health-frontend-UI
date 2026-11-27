@@ -16,6 +16,10 @@ import { IconButton, CircularProgress, Backdrop } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 // Create a custom MUI theme for a cohesive look, consistent with the Profile page.
 const theme = createTheme({
@@ -539,16 +543,14 @@ function Reporting() {
                 }}
               />
             </Box>
-            <Box sx={{ height: 500, width: "100%" }}>
+            <Box sx={{ ...DATA_GRID_CONTAINER_SX, height: 500 }}>
                 <DataGrid
                     rows={filteredRows}
                     columns={columns}
                     getRowId={(row) => row.id || row._id}
                     loading={isLoading}
-                    sx={{
-                      "& .MuiDataGrid-root": {
-                        fontFamily: "Montserrat, sans-serif",
-                      },
+                    sx={mergeDataGridSx({
+                      fontFamily: "Montserrat, sans-serif",
                       "& .status-pending": {
                         color: "rgb(234, 156, 0)",
                       },
@@ -579,7 +581,7 @@ function Reporting() {
                         fontWeight: 400,
                         fontFamily: "Montserrat, sans-serif",
                       },
-                    }}
+                    })}
                     initialState={{
                       pagination: {
                         paginationModel: {

@@ -35,6 +35,10 @@ import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../utils/usePermissions';
 import Swal from 'sweetalert2';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 // Create a custom MUI theme for a cohesive look, consistent with the Profile page.
 const theme = createTheme({
@@ -575,22 +579,17 @@ function Notifications() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ height: 600, width: "100%" }}>
+              <Box sx={DATA_GRID_CONTAINER_SX}>
                 <DataGrid
                   rows={filteredNotifications}
                   columns={notificationColumns}
                   getRowId={(row) => row.id || row._id}
                   onRowClick={(params) => handleViewDetails(params.row)}
-                  sx={{
-                    "& .MuiDataGrid-root": {
-                      fontFamily: "Montserrat, sans-serif",
-                      cursor: "pointer",
-                    },
+                  sx={mergeDataGridSx({
+                    fontFamily: "Montserrat, sans-serif",
+                    cursor: "pointer",
                     "& .MuiDataGrid-row": {
                       cursor: "pointer",
-                    },
-                    "& .MuiDataGrid-row:hover": {
-                      backgroundColor: "rgba(22, 116, 187, 0.04)",
                     },
                     "& .MuiDataGrid-columnHeaders": {
                       fontWeight: 800,
@@ -604,7 +603,7 @@ function Notifications() {
                       fontWeight: 400,
                       fontFamily: "Montserrat, sans-serif",
                     },
-                  }}
+                  })}
                   initialState={{
                     pagination: {
                       paginationModel: {

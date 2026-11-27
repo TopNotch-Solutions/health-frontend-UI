@@ -1122,18 +1122,26 @@ export default function Request() {
                             value={selectedRequest.medicalAidDetails?.mainMemberId}
                           />
                           <MetaItem
-                            label="ICD-10 Code"
-                            value={selectedRequest.medicalAidDetails?.icd10Code}
+                            label="ICD-10 Codes"
+                            value={[
+                              selectedRequest.medicalAidDetails?.icd10Code,
+                              ...(Array.isArray(
+                                selectedRequest.medicalAidDetails?.additionalIcds
+                              )
+                                ? selectedRequest.medicalAidDetails.additionalIcds.map(
+                                    (item) => item?.code || item?.ICD_10_code
+                                  )
+                                : selectedRequest.medicalAidDetails
+                                      ?.secondaryIcd10Code
+                                  ? [
+                                      selectedRequest.medicalAidDetails
+                                        .secondaryIcd10Code,
+                                    ]
+                                  : []),
+                            ]
+                              .filter(Boolean)
+                              .join(', ') || '—'}
                           />
-                          {selectedRequest.medicalAidDetails?.secondaryIcd10Code && (
-                            <MetaItem
-                              label="Second ICD-10 Code"
-                              value={
-                                selectedRequest.medicalAidDetails
-                                  ?.secondaryIcd10Code
-                              }
-                            />
-                          )}
                           <MetaItem
                             label="Medical Aid Number"
                             value={
@@ -1142,19 +1150,29 @@ export default function Request() {
                           />
                           <MetaItem
                             label="NAMAF"
-                            value={
+                            value={[
                               selectedRequest.medicalAidDetails?.maf ||
-                              selectedRequest.medicalAidDetails?.icd10Code
-                            }
+                                selectedRequest.medicalAidDetails?.icd10Code,
+                              ...(Array.isArray(
+                                selectedRequest.medicalAidDetails?.additionalIcds
+                              )
+                                ? selectedRequest.medicalAidDetails.additionalIcds.map(
+                                    (item) =>
+                                      item?.maf ||
+                                      item?.MAF ||
+                                      item?.code ||
+                                      item?.ICD_10_code
+                                  )
+                                : selectedRequest.medicalAidDetails?.secondaryMaf
+                                  ? [
+                                      selectedRequest.medicalAidDetails
+                                        .secondaryMaf,
+                                    ]
+                                  : []),
+                            ]
+                              .filter(Boolean)
+                              .join(', ') || '—'}
                           />
-                          {selectedRequest.medicalAidDetails?.secondaryMaf && (
-                            <MetaItem
-                              label="Second NAMAF"
-                              value={
-                                selectedRequest.medicalAidDetails?.secondaryMaf
-                              }
-                            />
-                          )}
                           <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1', md: '1 / -1' } }}>
                             <MetaItem
                               label="Patient Residential Address"

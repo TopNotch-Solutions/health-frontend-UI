@@ -32,6 +32,10 @@ import Backdrop from '@mui/material/Backdrop';
 import fetchJSON from '../utils/fetchJSON';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../utils/usePermissions';
+import {
+  DATA_GRID_CONTAINER_SX,
+  mergeDataGridSx,
+} from '../utils/dataGridStyles';
 
 // Custom theme for a consistent look
 const theme = createTheme({
@@ -419,7 +423,7 @@ export default function Transactions() {
                 </Grid>
               </Grid>
 
-              <Box sx={{ height: 600, width: '100%', overflowX: 'auto' }}>
+              <Box sx={DATA_GRID_CONTAINER_SX}>
                 {isLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                     <CircularProgress />
@@ -430,24 +434,19 @@ export default function Transactions() {
                     columns={transactionColumns}
                     getRowId={(row) => row.id || row._id}
                     loading={isLoading}
-                  sx={{
-                    '& .MuiDataGrid-root': {
+                    sx={mergeDataGridSx({
                       fontFamily: 'Roboto, sans-serif',
-                    },
-                    '& .MuiDataGrid-row:hover': {
-                      backgroundColor: 'rgba(22, 116, 187, 0.04)',
-                    },
-                  }}
-                  initialState={{
-                    pagination: {
-                      paginationModel: {
-                        pageSize: 25,
+                    })}
+                    initialState={{
+                      pagination: {
+                        paginationModel: {
+                          pageSize: 25,
+                        },
                       },
-                    },
-                    sorting: {
-                      sortModel: [{ field: 'time', sort: 'desc' }],
-                    },
-                  }}
+                      sorting: {
+                        sortModel: [{ field: 'time', sort: 'desc' }],
+                      },
+                    }}
                     pageSizeOptions={[25, 50, 100]}
                     disableRowSelectionOnClick
                     autoHeight={false}
